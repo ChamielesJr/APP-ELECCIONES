@@ -1,11 +1,20 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation
 
 /**
- * ESTRUCTURA BASE DE NAVEGACIÓN
+ * RUTAS DE NAVEGACIÓN
  *
- * Infraestructura inicial de rutas. La definición completa de rutas entre todos los
- * módulos será desarrollada en la siguiente tarea del Sprint.
+ * Centraliza las definiciones de rutas para todos los módulos del Administrador.
  */
 sealed class Screen(val route: String) {
-    object Login : Screen("login")
+    data object Login : Screen("login")
+    data object Dashboard : Screen("dashboard")
+    data object Instituciones : Screen("instituciones")
+    data object Usuarios : Screen("usuarios")
+    data object Cursos : Screen("cursos")
+    data object Estudiantes : Screen("estudiantes")
+    data object Elecciones : Screen("elecciones")
+    data object Listas : Screen("listas")
+    data object Candidatos : Screen("candidatos")
+    data object Configuracion : Screen("configuracion")
+    data object Resultados : Screen("resultados")
 }
