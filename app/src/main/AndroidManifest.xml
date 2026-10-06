@@ -10,12 +10,12 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Aplicación_Movil_De_Gestión_De_Procesos_electorales">
+        android:theme="@style/Theme.APPELECCIONES">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Aplicación_Movil_De_Gestión_De_Procesos_electorales"
+            android:theme="@style/Theme.APPELECCIONES"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
