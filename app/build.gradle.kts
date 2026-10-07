@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.appelecciones"
+    namespace = "com.example.aplicacin_movil_de_gestin_de_procesos_electorales"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.appelecciones"
+        applicationId = "com.example.aplicacin_movil_de_gestin_de_procesos_electorales"
         minSdk = 31
         targetSdk = 37
         versionCode = 1
@@ -40,7 +40,6 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -61,5 +60,4 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    implementation("androidx.compose.material:material-icons-extended")
 }

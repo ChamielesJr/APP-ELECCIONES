@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "APP ELECCIONES"
+rootProject.name = "Aplicación_Movil_De_Gestión_De_Procesos_electorales"
 include(":app")
  
