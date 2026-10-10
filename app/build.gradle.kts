@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -21,7 +23,23 @@ android {
     }
 
     buildTypes {
+        debug {
+            val localProperties = Properties()
+            val localPropertiesFile = rootProject.file("local.properties")
+            if (localPropertiesFile.exists()) {
+                localPropertiesFile.inputStream().use { stream ->
+                    localProperties.load(stream)
+                }
+            }
+            val adminEmail = localProperties.getProperty("DEV_ADMIN_EMAIL", "")
+            val adminPassword = localProperties.getProperty("DEV_ADMIN_PASSWORD", "")
+
+            buildConfigField("String", "DEV_ADMIN_EMAIL", "\"$adminEmail\"")
+            buildConfigField("String", "DEV_ADMIN_PASSWORD", "\"$adminPassword\"")
+        }
         release {
+            buildConfigField("String", "DEV_ADMIN_EMAIL", "\"\"")
+            buildConfigField("String", "DEV_ADMIN_PASSWORD", "\"\"")
             optimization {
                 enable = false
             }
@@ -33,6 +51,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

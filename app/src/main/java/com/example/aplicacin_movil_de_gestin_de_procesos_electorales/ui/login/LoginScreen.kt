@@ -27,6 +27,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,12 +39,10 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,7 +57,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.R
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -70,7 +68,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.R
 
 // Paleta de colores institucional basada en la referencia visual
 private val NavyBlue = Color(0xFF102B5C)
@@ -85,50 +84,20 @@ private val FieldBorder = Color(0xFFE2E8F0)
  * "Elecciones Estudiantiles — Distrito 13D02".
  *
  * @param onLoginSuccess Callback invocado tras un inicio de sesión exitoso.
+ * @param viewModel ViewModel que gestiona el estado y autenticación local.
  */
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit = {},
+    viewModel: LoginViewModel = viewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
 
-    var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
-    var rememberMe by rememberSaveable { mutableStateOf(false) }
-    var passwordVisible by rememberSaveable { mutableStateOf(false) }
-
-    var emailError by rememberSaveable { mutableStateOf<String?>(null) }
-    var passwordError by rememberSaveable { mutableStateOf<String?>(null) }
-
-    fun validateAndSubmit() {
-        var isValid = true
-
-        val trimmedEmail = email.trim()
-        if (trimmedEmail.isEmpty()) {
-            emailError = "El correo electrónico es obligatorio"
-            isValid = false
-        } else if (!trimmedEmail.contains("@") || !trimmedEmail.contains(".")) {
-            emailError = "Ingrese un correo electrónico válido"
-            isValid = false
-        } else {
-            emailError = null
-        }
-
-        if (password.isEmpty()) {
-            passwordError = "La contraseña es obligatoria"
-            isValid = false
-        } else {
-            passwordError = null
-        }
-
-        if (isValid) {
-            // En modo demostración, notificamos que los campos han sido validados
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(
-                    message = "Modo demostración: Formulario validado correctamente. Autenticación pendiente de conectar."
-                )
-            }
+    LaunchedEffect(uiState.snackbarMessage) {
+        uiState.snackbarMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.onSnackbarDismissed()
         }
     }
 
@@ -161,13 +130,7 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.End
                 ) {
                     LanguageSelector(
-                        onSelectLanguage = {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = "Idioma predeterminado: Español (ES)"
-                                )
-                            }
-                        }
+                        onSelectLanguage = { viewModel.onLanguageClick() }
                     )
                 }
 
@@ -237,12 +200,10 @@ fun LoginScreen(
 
                         // Campo de correo electrónico
                         OutlinedTextField(
-                            value = email,
-                            onValueChange = {
-                                email = it
-                                if (emailError != null) emailError = null
-                            },
+                            value = uiState.email,
+                            onValueChange = { viewModel.onEmailChange(it) },
                             modifier = Modifier.fillMaxWidth(),
+                            textStyle = TextStyle(color = NavyBlue, fontSize = 15.sp),
                             placeholder = {
                                 Text(
                                     text = "Correo electrónico",
@@ -256,25 +217,31 @@ fun LoginScreen(
                                     modifier = Modifier.size(20.dp)
                                 )
                             },
-                            isError = emailError != null,
+                            isError = uiState.emailError != null,
                             singleLine = true,
+                            enabled = !uiState.isLoading,
                             shape = RoundedCornerShape(12.dp),
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Email,
                                 imeAction = ImeAction.Next
                             ),
                             colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = NavyBlue,
+                                unfocusedTextColor = NavyBlue,
                                 focusedContainerColor = FieldBackground,
                                 unfocusedContainerColor = FieldBackground,
                                 errorContainerColor = FieldBackground,
                                 focusedBorderColor = InstitutionalBlue,
                                 unfocusedBorderColor = Color.Transparent,
-                                errorBorderColor = MaterialTheme.colorScheme.error
+                                errorBorderColor = MaterialTheme.colorScheme.error,
+                                focusedLeadingIconColor = TextGrayBlue,
+                                unfocusedLeadingIconColor = TextGrayBlue,
+                                cursorColor = InstitutionalBlue
                             )
                         )
-                        if (emailError != null) {
+                        if (uiState.emailError != null) {
                             Text(
-                                text = emailError!!,
+                                text = uiState.emailError!!,
                                 color = MaterialTheme.colorScheme.error,
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.padding(start = 4.dp, top = 4.dp)
@@ -285,12 +252,10 @@ fun LoginScreen(
 
                         // Campo de contraseña
                         OutlinedTextField(
-                            value = password,
-                            onValueChange = {
-                                password = it
-                                if (passwordError != null) passwordError = null
-                            },
+                            value = uiState.password,
+                            onValueChange = { viewModel.onPasswordChange(it) },
                             modifier = Modifier.fillMaxWidth(),
+                            textStyle = TextStyle(color = NavyBlue, fontSize = 15.sp),
                             placeholder = {
                                 Text(
                                     text = "Contraseña",
@@ -305,33 +270,44 @@ fun LoginScreen(
                                 )
                             },
                             trailingIcon = {
-                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                IconButton(
+                                    onClick = { viewModel.onTogglePasswordVisibility() },
+                                    enabled = !uiState.isLoading
+                                ) {
                                     VisibilityToggleIcon(
-                                        visible = passwordVisible,
+                                        visible = uiState.isPasswordVisible,
                                         tint = TextGrayBlue
                                     )
                                 }
                             },
-                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            isError = passwordError != null,
+                            visualTransformation = if (uiState.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            isError = uiState.passwordError != null,
                             singleLine = true,
+                            enabled = !uiState.isLoading,
                             shape = RoundedCornerShape(12.dp),
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Password,
                                 imeAction = ImeAction.Done
                             ),
                             colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = NavyBlue,
+                                unfocusedTextColor = NavyBlue,
                                 focusedContainerColor = FieldBackground,
                                 unfocusedContainerColor = FieldBackground,
                                 errorContainerColor = FieldBackground,
                                 focusedBorderColor = InstitutionalBlue,
                                 unfocusedBorderColor = Color.Transparent,
-                                errorBorderColor = MaterialTheme.colorScheme.error
+                                errorBorderColor = MaterialTheme.colorScheme.error,
+                                focusedLeadingIconColor = TextGrayBlue,
+                                unfocusedLeadingIconColor = TextGrayBlue,
+                                focusedTrailingIconColor = TextGrayBlue,
+                                unfocusedTrailingIconColor = TextGrayBlue,
+                                cursorColor = InstitutionalBlue
                             )
                         )
-                        if (passwordError != null) {
+                        if (uiState.passwordError != null) {
                             Text(
-                                text = passwordError!!,
+                                text = uiState.passwordError!!,
                                 color = MaterialTheme.colorScheme.error,
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.padding(start = 4.dp, top = 4.dp)
@@ -350,8 +326,9 @@ fun LoginScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Checkbox(
-                                    checked = rememberMe,
-                                    onCheckedChange = { rememberMe = it },
+                                    checked = uiState.rememberMe,
+                                    onCheckedChange = { viewModel.onRememberMeChange(it) },
+                                    enabled = !uiState.isLoading,
                                     colors = CheckboxDefaults.colors(
                                         checkedColor = InstitutionalBlue,
                                         uncheckedColor = TextGrayBlue
@@ -374,12 +351,8 @@ fun LoginScreen(
                                     fontWeight = FontWeight.SemiBold,
                                     textDecoration = TextDecoration.Underline
                                 ),
-                                modifier = Modifier.clickable {
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            message = "La recuperación de contraseña estará disponible próximamente."
-                                        )
-                                    }
+                                modifier = Modifier.clickable(enabled = !uiState.isLoading) {
+                                    viewModel.onForgotPasswordClick()
                                 }
                             )
                         }
@@ -388,7 +361,8 @@ fun LoginScreen(
 
                         // Botón principal de Iniciar sesión
                         Button(
-                            onClick = { validateAndSubmit() },
+                            onClick = { viewModel.login(onSuccess = onLoginSuccess) },
+                            enabled = !uiState.isLoading,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(50.dp),
@@ -398,22 +372,30 @@ fun LoginScreen(
                                 contentColor = Color.White
                             )
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = "Iniciar sesión",
-                                    style = TextStyle(
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
+                            if (uiState.isLoading) {
+                                CircularProgressIndicator(
+                                    color = Color.White,
+                                    strokeWidth = 2.5.dp,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            } else {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = "Iniciar sesión",
+                                        style = TextStyle(
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
                                     )
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                ArrowForwardIcon(
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    ArrowForwardIcon(
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
                         }
 
@@ -601,7 +583,7 @@ private fun InstitutionalLogoPlaceholder(
         contentDescription = "Logotipo Elecciones Estudiantiles",
         modifier = modifier
             .fillMaxWidth()
-            .height(300.dp),
+            .height(180.dp),
         contentScale = ContentScale.Fit
     )
 }
