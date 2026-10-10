@@ -1,10 +1,14 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.candidatos.CandidatosScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configuracion.ConfiguracionScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.cursos.CursosScreen
@@ -43,71 +47,111 @@ fun AppNavigation(
         }
 
         composable(Screen.Dashboard.route) {
-            DashboardScreen(
-                onInstitucionesClick = { navController.navigate(Screen.Instituciones.route) },
-                onUsuariosClick = { navController.navigate(Screen.Usuarios.route) },
-                onCursosClick = { navController.navigate(Screen.Cursos.route) },
-                onEstudiantesClick = { navController.navigate(Screen.Estudiantes.route) },
-                onEleccionesClick = { navController.navigate(Screen.Elecciones.route) },
-                onListasClick = { navController.navigate(Screen.Listas.route) },
-                onCandidatosClick = { navController.navigate(Screen.Candidatos.route) },
-                onConfiguracionClick = { navController.navigate(Screen.Configuracion.route) },
-                onResultadosClick = { navController.navigate(Screen.Resultados.route) },
-            )
+            ProtectedDestination(navController = navController) {
+                DashboardScreen(
+                    onInstitucionesClick = { navController.navigate(Screen.Instituciones.route) },
+                    onUsuariosClick = { navController.navigate(Screen.Usuarios.route) },
+                    onCursosClick = { navController.navigate(Screen.Cursos.route) },
+                    onEstudiantesClick = { navController.navigate(Screen.Estudiantes.route) },
+                    onEleccionesClick = { navController.navigate(Screen.Elecciones.route) },
+                    onListasClick = { navController.navigate(Screen.Listas.route) },
+                    onCandidatosClick = { navController.navigate(Screen.Candidatos.route) },
+                    onConfiguracionClick = { navController.navigate(Screen.Configuracion.route) },
+                    onResultadosClick = { navController.navigate(Screen.Resultados.route) },
+                )
+            }
         }
 
         composable(Screen.Instituciones.route) {
-            InstitucionesScreen(
-                onBack = { navController.popBackStack() },
-            )
+            ProtectedDestination(navController = navController) {
+                InstitucionesScreen(
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(Screen.Usuarios.route) {
-            UsuariosScreen(
-                onBack = { navController.popBackStack() },
-            )
+            ProtectedDestination(navController = navController) {
+                UsuariosScreen(
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(Screen.Cursos.route) {
-            CursosScreen(
-                onBack = { navController.popBackStack() },
-            )
+            ProtectedDestination(navController = navController) {
+                CursosScreen(
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(Screen.Estudiantes.route) {
-            EstudiantesScreen(
-                onBack = { navController.popBackStack() },
-            )
+            ProtectedDestination(navController = navController) {
+                EstudiantesScreen(
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(Screen.Elecciones.route) {
-            EleccionesScreen(
-                onBack = { navController.popBackStack() },
-            )
+            ProtectedDestination(navController = navController) {
+                EleccionesScreen(
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(Screen.Listas.route) {
-            ListasScreen(
-                onBack = { navController.popBackStack() },
-            )
+            ProtectedDestination(navController = navController) {
+                ListasScreen(
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(Screen.Candidatos.route) {
-            CandidatosScreen(
-                onBack = { navController.popBackStack() },
-            )
+            ProtectedDestination(navController = navController) {
+                CandidatosScreen(
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(Screen.Configuracion.route) {
-            ConfiguracionScreen(
-                onBack = { navController.popBackStack() },
-            )
+            ProtectedDestination(navController = navController) {
+                ConfiguracionScreen(
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(Screen.Resultados.route) {
-            ResultadosScreen(
-                onBack = { navController.popBackStack() },
-            )
+            ProtectedDestination(navController = navController) {
+                ResultadosScreen(
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
+    }
+}
+
+/**
+ * Envoltorio para proteger las rutas administrativas mediante verificación de sesión.
+ */
+@Composable
+private fun ProtectedDestination(
+    navController: NavHostController,
+    content: @Composable () -> Unit
+) {
+    val isAuthenticated by SessionManager.isAuthenticated.collectAsState()
+    if (!isAuthenticated) {
+        LaunchedEffect(Unit) {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    } else {
+        content()
     }
 }
