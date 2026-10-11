@@ -4,18 +4,34 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.AdministrationSection
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardStatistics
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardTopBar
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.ElectionStatusCard
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.WelcomeCard
 
 @Composable
 fun DashboardScreen(
@@ -28,82 +44,160 @@ fun DashboardScreen(
     onCandidatosClick: () -> Unit = {},
     onConfiguracionClick: () -> Unit = {},
     onResultadosClick: () -> Unit = {},
+    onLogoutSuccess: () -> Unit = {},
+    viewModel: DashboardViewModel = viewModel(),
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = "Panel Administrador (Dashboard)",
-            style = MaterialTheme.typography.headlineSmall,
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.snackbarMessage) {
+        uiState.snackbarMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.onDismissSnackbar()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            DashboardTopBar(
+                currentUser = uiState.currentUser,
+                onLogoutClick = { viewModel.onLogoutRequested() }
+            )
+        },
+        bottomBar = {
+            DashboardBottomNavigation(
+                currentRoute = Screen.Dashboard.route,
+                onNavigate = { route ->
+                    when (route) {
+                        Screen.Dashboard.route -> { /* Ya en Inicio */ }
+                        Screen.Cursos.route -> onCursosClick()
+                        Screen.Estudiantes.route -> onEstudiantesClick()
+                        Screen.Listas.route -> onListasClick()
+                        Screen.Resultados.route -> onResultadosClick()
+                        Screen.Configuracion.route -> onConfiguracionClick()
+                    }
+                }
+            )
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = Color(0xFFF8FAFC) // Fondo gris extra claro limpio
+    ) { paddingValues ->
+        // Contenido principal con desplazamiento vertical
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // 1. Tarjeta de Bienvenida
+            WelcomeCard()
+
+            // 2. Tarjetas Estadísticas conectadas a Room DAOs (Exclusivamente informativas)
+            DashboardStatistics(
+                totalCursos = uiState.totalCursos,
+                totalEstudiantes = uiState.totalEstudiantesHabilitados,
+                totalListas = uiState.totalListasElectorales,
+                totalVotos = uiState.votosRegistrados
+            )
+
+            // 3. Sección "Administración del sistema" (5 tarjetas interactivas con navegación)
+            AdministrationSection(
+                onCursosClick = onCursosClick,
+                onEstudiantesClick = onEstudiantesClick,
+                onListasClick = onListasClick,
+                onConfiguracionClick = onConfiguracionClick,
+                onResultadosClick = onResultadosClick
+            )
+
+            // 4. Panel "Estado de la elección"
+            ElectionStatusCard(
+                estadoTexto = uiState.estadoEleccion,
+                isEleccionAbierta = uiState.isEleccionAbierta,
+                onAbrirVotacionClick = { viewModel.onAbrirVotacionClick() },
+                onCerrarVotacionClick = { viewModel.onCerrarVotacionClick() }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+
+    // Diálogo de Confirmación para Cerrar Sesión
+    if (uiState.showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onDismissLogoutDialog() },
+            title = {
+                Text(
+                    text = "Cerrar sesión",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF0F172A)
+                )
+            },
+            text = {
+                Text(
+                    text = "¿Está seguro que desea cerrar la sesión de Administrador?",
+                    fontSize = 14.sp,
+                    color = Color(0xFF475569)
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.confirmLogout(onLogoutSuccess) }
+                ) {
+                    Text(
+                        text = "Cerrar sesión",
+                        color = Color(0xFFDC2626),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { viewModel.onDismissLogoutDialog() }
+                ) {
+                    Text(
+                        text = "Cancelar",
+                        color = Color(0xFF64748B)
+                    )
+                }
+            },
+            containerColor = Color.White
         )
-        Spacer(modifier = Modifier.height(12.dp))
+    }
 
-        Button(
-            onClick = onInstitucionesClick,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = "Gestión de Instituciones")
-        }
-
-        Button(
-            onClick = onUsuariosClick,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = "Gestión de Usuarios")
-        }
-
-        Button(
-            onClick = onCursosClick,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = "Gestión de Cursos")
-        }
-
-        Button(
-            onClick = onEstudiantesClick,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = "Gestión de Estudiantes")
-        }
-
-        Button(
-            onClick = onEleccionesClick,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = "Procesos Electorales")
-        }
-
-        Button(
-            onClick = onListasClick,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = "Listas Electorales")
-        }
-
-        Button(
-            onClick = onCandidatosClick,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = "Candidatos")
-        }
-
-        Button(
-            onClick = onConfiguracionClick,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = "Configuración Electoral")
-        }
-
-        Button(
-            onClick = onResultadosClick,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = "Resultados Electorales")
-        }
+    // Diálogo de Información sobre Estado de Elección
+    if (uiState.showStatusDialog && uiState.dialogMessage != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onDismissStatusDialog() },
+            title = {
+                Text(
+                    text = "Proceso Electoral",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF0F172A)
+                )
+            },
+            text = {
+                Text(
+                    text = uiState.dialogMessage!!,
+                    fontSize = 14.sp,
+                    color = Color(0xFF475569)
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.onDismissStatusDialog() }
+                ) {
+                    Text(
+                        text = "Entendido",
+                        color = Color(0xFF2563EB),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            containerColor = Color.White
+        )
     }
 }

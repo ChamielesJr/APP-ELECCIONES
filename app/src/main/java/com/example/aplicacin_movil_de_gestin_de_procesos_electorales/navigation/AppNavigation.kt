@@ -58,6 +58,11 @@ fun AppNavigation(
                     onCandidatosClick = { navController.navigate(Screen.Candidatos.route) },
                     onConfiguracionClick = { navController.navigate(Screen.Configuracion.route) },
                     onResultadosClick = { navController.navigate(Screen.Resultados.route) },
+                    onLogoutSuccess = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
                 )
             }
         }
@@ -82,6 +87,7 @@ fun AppNavigation(
             ProtectedDestination(navController = navController) {
                 CursosScreen(
                     onBack = { navController.popBackStack() },
+                    onNavigate = { route -> handleBottomNavigation(navController, route) }
                 )
             }
         }
@@ -90,6 +96,7 @@ fun AppNavigation(
             ProtectedDestination(navController = navController) {
                 EstudiantesScreen(
                     onBack = { navController.popBackStack() },
+                    onNavigate = { route -> handleBottomNavigation(navController, route) }
                 )
             }
         }
@@ -106,6 +113,7 @@ fun AppNavigation(
             ProtectedDestination(navController = navController) {
                 ListasScreen(
                     onBack = { navController.popBackStack() },
+                    onNavigate = { route -> handleBottomNavigation(navController, route) }
                 )
             }
         }
@@ -122,6 +130,7 @@ fun AppNavigation(
             ProtectedDestination(navController = navController) {
                 ConfiguracionScreen(
                     onBack = { navController.popBackStack() },
+                    onNavigate = { route -> handleBottomNavigation(navController, route) }
                 )
             }
         }
@@ -130,8 +139,22 @@ fun AppNavigation(
             ProtectedDestination(navController = navController) {
                 ResultadosScreen(
                     onBack = { navController.popBackStack() },
+                    onNavigate = { route -> handleBottomNavigation(navController, route) }
                 )
             }
+        }
+    }
+}
+
+private fun handleBottomNavigation(navController: NavHostController, targetRoute: String) {
+    if (targetRoute == Screen.Dashboard.route) {
+        navController.navigate(Screen.Dashboard.route) {
+            popUpTo(Screen.Dashboard.route) { inclusive = true }
+        }
+    } else {
+        navController.navigate(targetRoute) {
+            popUpTo(Screen.Dashboard.route) { inclusive = false }
+            launchSingleTop = true
         }
     }
 }
