@@ -10,10 +10,15 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.dao.InstitucionDao
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.dao.ListaElectoralDao
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.dao.UsuarioDao
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.dao.CursoDao
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.dao.EstudianteDao
+
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.CandidatoEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.InstitucionEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.ListaElectoralEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.UsuarioEntity
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.CursoEntity
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.EstudianteEntity
 
 /**
  * Base de datos principal de la aplicación con Room Database.
@@ -25,8 +30,10 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.
         ListaElectoralEntity::class,
         CandidatoEntity::class,
         UsuarioEntity::class,
+        CursoEntity::class,
+        EstudianteEntity::class
     ],
-    version = 2,
+    version = 3, // OJO AQUÍ: Subimos la versión a 3
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -35,13 +42,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun listaElectoralDao(): ListaElectoralDao
     abstract fun candidatoDao(): CandidatoDao
     abstract fun usuarioDao(): UsuarioDao
+    abstract fun cursoDao(): CursoDao
+    abstract fun estudianteDao(): EstudianteDao
 
     companion object {
         private const val DATABASE_NAME = "elecciones_escolares.db"
 
-        /**
-         * Migración de versión 1 a versión 2: Incorpora la tabla `usuarios`.
-         */
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
@@ -62,13 +68,43 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `cursos` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `grado` TEXT NOT NULL,
+                        `paralelo` TEXT NOT NULL,
+                        `jornada` TEXT NOT NULL,
+                        `nivel` TEXT NOT NULL,
+                        `estado` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `estudiantes` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `cedula` TEXT NOT NULL,
+                        `nombre` TEXT NOT NULL,
+                        `apellido` TEXT NOT NULL,
+                        `cursoId` INTEGER NOT NULL,
+                        `voto` INTEGER NOT NULL,
+                        `estado` INTEGER NOT NULL,
+                        FOREIGN KEY(`cursoId`) REFERENCES `cursos`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_estudiantes_cursoId` ON `estudiantes` (`cursoId`)")
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        /**
-         * Retorna la instancia Singleton de AppDatabase.
-         * Seguro para hilos de ejecución concurrentes (Thread-Safe).
-         */
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -76,7 +112,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME,
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance
