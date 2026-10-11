@@ -11,9 +11,8 @@ data class ListaElectoralEntity(
     val nombre: String,
     val numero: Int,
     //val logo: String? = null,
-    val descripcion: String? = null,
-
-    val color: String,
     val logo: String = "",
+    val descripcion: String? = null,
+    val color: String,
     val estado: Boolean = true,
 )
