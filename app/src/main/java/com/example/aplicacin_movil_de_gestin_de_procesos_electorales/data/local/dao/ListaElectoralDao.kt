@@ -26,6 +26,10 @@ interface ListaElectoralDao {
     @Query("SELECT * FROM lista_electoral ORDER BY numero ASC")
     suspend fun obtenerTodas(): List<ListaElectoralEntity>
 
+    // Obtener todas las listas como Flow para reactividad
+    @Query("SELECT * FROM lista_electoral ORDER BY numero ASC")
+    fun obtenerTodasFlow(): Flow<List<ListaElectoralEntity>>
+
     // Obtener solamente las listas activas
     @Query("SELECT * FROM lista_electoral WHERE estado = 1 ORDER BY numero ASC")
     suspend fun obtenerActivas(): List<ListaElectoralEntity>
