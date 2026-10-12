@@ -55,6 +55,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.Edit
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
 
 private val AzulElectoral = Color(0xFF2463EB)
 private val FondoElectoral = Color(0xFFF4F7FC)
@@ -127,6 +129,12 @@ fun ListasScreen(
 
     Scaffold(
         containerColor = FondoElectoral,
+        bottomBar = {
+            DashboardBottomNavigation(
+                currentRoute = Screen.Listas.route,
+                onNavigate = onNavigate
+            )
+        },
         topBar = {
             TopAppBar(
                 title = {
