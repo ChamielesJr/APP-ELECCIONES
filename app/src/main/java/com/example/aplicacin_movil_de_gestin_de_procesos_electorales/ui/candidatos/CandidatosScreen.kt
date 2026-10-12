@@ -36,7 +36,6 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.
 import kotlinx.coroutines.flow.Flow
 import android.content.Context
 import android.net.Uri
-import okhttp3.internal.platform.android.AndroidSocketAdapter.Companion.factory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts

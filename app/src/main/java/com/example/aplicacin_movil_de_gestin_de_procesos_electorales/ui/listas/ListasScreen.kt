@@ -1,6 +1,7 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.listas
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +52,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -114,6 +117,7 @@ fun ListasScreen(
     var mostrarFormulario by rememberSaveable { mutableStateOf(false) }
     var listaEnEdicion by rememberSaveable { mutableStateOf<ListaElectoralEntity?>(null) }
     var listaAEliminar by rememberSaveable { mutableStateOf<ListaElectoralEntity?>(null) }
+    val focusManager = LocalFocusManager.current
 
     if (mostrarFormulario) {
         val candidatosLista = candidatos.filter { it.listaId == (listaEnEdicion?.id ?: 0) }
@@ -258,6 +262,11 @@ fun ListasScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        focusManager.clearFocus()
+                    })
+                }
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -361,7 +370,9 @@ fun ListasScreen(
                         )
                     )
                     Button(
-                        onClick = { /* El filtro se aplica en tiempo real al escribir */ },
+                        onClick = {
+                            focusManager.clearFocus()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = AzulPrimario)
@@ -666,8 +677,8 @@ private fun TarjetaListaElectoral(
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "0 votos",
-                            style = MaterialTheme.typography.titleMedium,
+                            text = "Sin datos de votos",
+                            style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = AzulMarino
                         )
