@@ -1,4 +1,3 @@
-
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.listas
 
 import androidx.lifecycle.ViewModel
@@ -13,6 +12,7 @@ import kotlinx.coroutines.launch
 
 data class ListaElectoralUiState(
     val listas: List<ListaElectoralEntity> = emptyList(),
+    val listasDesactivadas: List<ListaElectoralEntity> = emptyList(),
     val cargando: Boolean = true,
     val mensajeError: String? = null
 )
@@ -21,7 +21,8 @@ class ListaElectoralViewModel(
     private val repository: ListaElectoralRepository
 ) : ViewModel() {
 
-    val uiState = repository.observarTodas()
+    //val uiState = repository.observarTodas()
+    val uiState = repository.observarActivas()
         .map<List<ListaElectoralEntity>, ListaElectoralUiState> { listas ->
             ListaElectoralUiState(
                 listas = listas,
@@ -43,6 +44,16 @@ class ListaElectoralViewModel(
             initialValue = ListaElectoralUiState()
         )
 
+    val listasDesactivadas = repository.observarDesactivadas()
+        .catch { error ->
+            emit(emptyList())
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
     fun guardar(lista: ListaElectoralEntity) {
         viewModelScope.launch {
             try {
@@ -52,8 +63,32 @@ class ListaElectoralViewModel(
                     repository.actualizar(lista)
                 }
             } catch (error: Exception) {
-
+                // Aquí podremos gestionar el error de guardado más adelante.
             }
         }
     }
+
+    fun cambiarEstado(lista: ListaElectoralEntity) {
+        viewModelScope.launch {
+            try {
+                repository.cambiarEstado(
+                    id = lista.id,
+                    estado = !lista.estado
+                )
+            } catch (error: Exception) {
+                // Más adelante mostraremos el error en pantalla.
+            }
+        }
+    }
+
+    fun eliminar(lista: ListaElectoralEntity) {
+        viewModelScope.launch {
+            try {
+                repository.eliminar(lista)
+            } catch (error: Exception) {
+                // Más adelante mostraremos el error en pantalla.
+            }
+        }
+    }
+
 }

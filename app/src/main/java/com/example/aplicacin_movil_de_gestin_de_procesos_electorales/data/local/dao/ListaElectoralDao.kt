@@ -30,6 +30,16 @@ interface ListaElectoralDao {
     @Query("SELECT * FROM lista_electoral ORDER BY numero ASC")
     fun observarTodas(): Flow<List<ListaElectoralEntity>>
 
+    @Query("SELECT * FROM lista_electoral ORDER BY numero ASC")
+    fun observarActivas(): Flow<List<ListaElectoralEntity>>
+
+    @Query("SELECT * FROM lista_electoral WHERE estado = 1 ORDER BY numero ASC")
+    fun observarActivasEnTiempoReal(): Flow<List<ListaElectoralEntity>>
+
+    // Observar las listas desactivadas en tiempo real
+    @Query("SELECT * FROM lista_electoral WHERE estado = 0 ORDER BY numero ASC")
+    fun observarDesactivadas(): Flow<List<ListaElectoralEntity>>
+
     // Obtener todas las listas como Flow para reactividad
     @Query("SELECT * FROM lista_electoral ORDER BY numero ASC")
     fun obtenerTodasFlow(): Flow<List<ListaElectoralEntity>>
