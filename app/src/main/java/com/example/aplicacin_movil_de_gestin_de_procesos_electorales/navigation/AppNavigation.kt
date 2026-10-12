@@ -4,14 +4,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.CursoRepositoryImpl
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.candidatos.CandidatosScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configuracion.ConfiguracionScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.cursos.CursosScreen
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.cursos.CursosViewModel
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.DashboardScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.elecciones.EleccionesScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.estudiantes.EstudiantesScreen
@@ -23,7 +28,6 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.usuarios
 
 /**
  * GRAFO PRINCIPAL DE NAVEGACIÓN
- *
  * Configura las rutas y el flujo de navegación para el módulo Administrador.
  */
 @Composable
@@ -85,7 +89,15 @@ fun AppNavigation(
 
         composable(Screen.Cursos.route) {
             ProtectedDestination(navController = navController) {
+                val context = LocalContext.current
+                val database = AppDatabase.getInstance(context)
+                val repository = CursoRepositoryImpl(database.cursoDao())
+                val viewModel: CursosViewModel = viewModel(
+                    factory = CursosViewModel.Factory(repository)
+                )
+
                 CursosScreen(
+                    viewModel = viewModel,
                     onBack = { navController.popBackStack() },
                     onNavigate = { route -> handleBottomNavigation(navController, route) }
                 )
