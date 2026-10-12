@@ -31,9 +31,14 @@ interface CandidatoDao {
     @Query("SELECT * FROM candidato WHERE listaId = :listaId ORDER BY apellidos ASC")
     suspend fun obtenerPorLista(listaId: Int): List<CandidatoEntity>
 
-    //@Query("""SELECT * FROM candidato WHERE listaElectoralId = :listaId""")
-    //fun obtenerPorLista(listaId: Int): Flow<List<CandidatoEntity>>
+    // Comprobar si una lista electoral tiene candidatos asociados
+    @Query("SELECT COUNT(*) FROM candidato WHERE listaId = :listaId")
+    suspend fun contarPorLista(listaId: Int): Int
 
     @Query("DELETE FROM candidato")
     suspend fun eliminarTodos()
+
+    @Query("DELETE FROM candidato WHERE listaId = :listaId")
+    suspend fun eliminarPorLista(listaId: Int)
+
 }

@@ -11,10 +11,7 @@ data class CandidatoEntity(
     val nombres: String,
     val apellidos: String,
     val cargo: String,
-    //val fotografia: String? = null,
     val foto: String = "",
-    val listaElectoralId: Int,
-    //val descripcion: String? = null
+    // Identificador de la lista electoral a la que pertenece.
     val listaId: Int,
 )
-

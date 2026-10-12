@@ -33,7 +33,7 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.
         CursoEntity::class,
         EstudianteEntity::class
     ],
-    version = 3, // OJO AQUÍ: Subimos la versión a 3
+    version = 4, // OJO AQUÍ: Subimos la versión a 4
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -113,6 +113,7 @@ abstract class AppDatabase : RoomDatabase() {
                     DATABASE_NAME,
                 )
                     .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                        .fallbackToDestructiveMigration(true)
                     .build()
                 INSTANCE = instance
                 instance

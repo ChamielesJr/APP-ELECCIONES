@@ -21,7 +21,6 @@ class ListaElectoralViewModel(
     private val repository: ListaElectoralRepository
 ) : ViewModel() {
 
-    //val uiState = repository.observarTodas()
     val uiState = repository.observarActivas()
         .map<List<ListaElectoralEntity>, ListaElectoralUiState> { listas ->
             ListaElectoralUiState(
@@ -54,16 +53,26 @@ class ListaElectoralViewModel(
             initialValue = emptyList()
         )
 
-    fun guardar(lista: ListaElectoralEntity) {
+    fun guardar(
+        lista: ListaElectoralEntity,
+        presidenteNombre: String = "",
+        vicepresidenteNombre: String = ""
+    ) {
         viewModelScope.launch {
             try {
-                if (lista.id == 0) {
+                if (presidenteNombre.isNotBlank() || vicepresidenteNombre.isNotBlank()) {
+                    repository.guardarListaConCandidatos(
+                        lista = lista,
+                        presidenteNombreCompleto = presidenteNombre,
+                        vicepresidenteNombreCompleto = vicepresidenteNombre
+                    )
+                } else if (lista.id == 0) {
                     repository.insertar(lista)
                 } else {
                     repository.actualizar(lista)
                 }
             } catch (error: Exception) {
-                // Aquí podremos gestionar el error de guardado más adelante.
+                // Manejo de errores
             }
         }
     }
@@ -76,7 +85,7 @@ class ListaElectoralViewModel(
                     estado = !lista.estado
                 )
             } catch (error: Exception) {
-                // Más adelante mostraremos el error en pantalla.
+                // Manejo de errores
             }
         }
     }
@@ -86,9 +95,8 @@ class ListaElectoralViewModel(
             try {
                 repository.eliminar(lista)
             } catch (error: Exception) {
-                // Más adelante mostraremos el error en pantalla.
+                // Manejo de errores
             }
         }
     }
-
 }
