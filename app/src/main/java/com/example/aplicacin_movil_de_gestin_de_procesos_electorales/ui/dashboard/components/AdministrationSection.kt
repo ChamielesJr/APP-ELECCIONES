@@ -8,8 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.HowToVote
+import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.MaterialTheme
@@ -26,8 +29,14 @@ fun AdministrationSection(
     onCursosClick: () -> Unit,
     onEstudiantesClick: () -> Unit,
     onListasClick: () -> Unit,
+    onUsuariosClick: () -> Unit,
+    onInstitucionesClick: () -> Unit,
+    onEleccionesClick: () -> Unit,
     onConfiguracionClick: () -> Unit,
     onResultadosClick: () -> Unit,
+    totalUsuarios: Int = 0,
+    totalInstituciones: Int = 0,
+    totalProcesos: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -72,7 +81,7 @@ fun AdministrationSection(
             )
         }
 
-        // Fila 2: Listas electorales | Configuración
+        // Fila 2: Listas electorales | Usuarios (RF3)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -88,25 +97,66 @@ fun AdministrationSection(
             )
 
             AdministrationCard(
+                title = "Usuarios",
+                description = "Administrar los usuarios autorizados ($totalUsuarios registrados).",
+                icon = Icons.Default.ManageAccounts,
+                iconColor = Color(0xFF0284C7),
+                iconBackgroundColor = Color(0xFFF0F9FF),
+                onClick = onUsuariosClick,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Fila 3: Instituciones educativas (RF2) | Procesos electorales (RF9)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AdministrationCard(
+                title = "Instituciones educativas",
+                description = "Consultar y registrar instituciones ($totalInstituciones registradas).",
+                icon = Icons.Default.AccountBalance,
+                iconColor = Color(0xFF059669),
+                iconBackgroundColor = Color(0xFFECFDF5),
+                onClick = onInstitucionesClick,
+                modifier = Modifier.weight(1f)
+            )
+
+            AdministrationCard(
+                title = "Procesos electorales",
+                description = "Supervisar y controlar elecciones ($totalProcesos procesos).",
+                icon = Icons.Default.HowToVote,
+                iconColor = Color(0xFF2563EB),
+                iconBackgroundColor = Color(0xFFEFF6FF),
+                onClick = onEleccionesClick,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Fila 4: Configuración | Resultados
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AdministrationCard(
                 title = "Configuración",
-                description = "Configurar el nombre, mensaje institucional, fechas y horarios de la elección.",
+                description = "Crear y definir parámetros iniciales de la elección.",
                 icon = Icons.Default.Settings,
                 iconColor = Color(0xFF7C3AED),
                 iconBackgroundColor = Color(0xFFF5F3FF),
                 onClick = onConfiguracionClick,
                 modifier = Modifier.weight(1f)
             )
-        }
 
-        // Fila 3: Resultados (Tarjeta agregada según especificación de SCRUM-19)
-        AdministrationCard(
-            title = "Resultados",
-            description = "Consultar los resultados y estadísticas del proceso electoral.",
-            icon = Icons.Default.BarChart,
-            iconColor = Color(0xFF0284C7),
-            iconBackgroundColor = Color(0xFFF0F9FF),
-            onClick = onResultadosClick,
-            modifier = Modifier.fillMaxWidth()
-        )
+            AdministrationCard(
+                title = "Resultados",
+                description = "Consultar resultados y estadísticas electorales.",
+                icon = Icons.Default.BarChart,
+                iconColor = Color(0xFFEA580C),
+                iconBackgroundColor = Color(0xFFFFF7ED),
+                onClick = onResultadosClick,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }

@@ -17,14 +17,13 @@ data class DashboardUiState(
     val totalCursos: Int = 0,
     val totalEstudiantesHabilitados: Int = 0,
     val totalListasElectorales: Int = 0,
+    val totalUsuarios: Int = 0,
+    val totalInstituciones: Int = 0,
+    val totalProcesos: Int = 0,
     val votosRegistrados: Int = 0,
     val currentUser: UsuarioEntity? = null,
-    val estadoEleccion: String = "Elección cerrada",
-    val isEleccionAbierta: Boolean = false,
     val snackbarMessage: String? = null,
     val showLogoutDialog: Boolean = false,
-    val showStatusDialog: Boolean = false,
-    val dialogMessage: String? = null,
 )
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -33,6 +32,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val cursoDao = db.cursoDao()
     private val estudianteDao = db.estudianteDao()
     private val listaElectoralDao = db.listaElectoralDao()
+    private val usuarioDao = db.usuarioDao()
+    private val institucionDao = db.institucionDao()
+    private val procesoElectoralDao = db.procesoElectoralDao()
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -42,6 +44,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         observeCursos()
         observeEstudiantes()
         observeListasElectorales()
+        observeUsuarios()
+        observeInstituciones()
+        observeProcesos()
     }
 
     private fun observeSession() {
@@ -89,6 +94,36 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    private fun observeUsuarios() {
+        viewModelScope.launch {
+            usuarioDao.obtenerTodosLosUsuarios()
+                .catch { emit(emptyList()) }
+                .collect { usuarios ->
+                    _uiState.update { it.copy(totalUsuarios = usuarios.size) }
+                }
+        }
+    }
+
+    private fun observeInstituciones() {
+        viewModelScope.launch {
+            institucionDao.obtenerTodasInstituciones()
+                .catch { emit(emptyList()) }
+                .collect { insts ->
+                    _uiState.update { it.copy(totalInstituciones = insts.size) }
+                }
+        }
+    }
+
+    private fun observeProcesos() {
+        viewModelScope.launch {
+            procesoElectoralDao.obtenerTodos()
+                .catch { emit(emptyList()) }
+                .collect { procesos ->
+                    _uiState.update { it.copy(totalProcesos = procesos.size) }
+                }
+        }
+    }
+
     fun onLogoutRequested() {
         _uiState.update { it.copy(showLogoutDialog = true) }
     }
@@ -101,28 +136,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         _uiState.update { it.copy(showLogoutDialog = false) }
         SessionManager.logout()
         onLogoutSuccess()
-    }
-
-    fun onAbrirVotacionClick() {
-        _uiState.update {
-            it.copy(
-                showStatusDialog = true,
-                dialogMessage = "Atención: La apertura del proceso electoral estará vinculada al módulo de Configuración Electoral y Validación de Juntas Electorales."
-            )
-        }
-    }
-
-    fun onCerrarVotacionClick() {
-        _uiState.update {
-            it.copy(
-                showStatusDialog = true,
-                dialogMessage = "Atención: El cierre del proceso electoral generará el acta definitiva de escrutinio en el módulo de Resultados."
-            )
-        }
-    }
-
-    fun onDismissStatusDialog() {
-        _uiState.update { it.copy(showStatusDialog = false, dialogMessage = null) }
     }
 
     fun onDismissSnackbar() {

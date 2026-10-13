@@ -28,10 +28,11 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.login.Lo
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.resultados.ResultadosScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.theme.Aplicación_Movil_De_Gestión_De_Procesos_electoralesTheme
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.usuarios.UsuariosScreen
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.votacion.VotacionScreen
 
 /**
  * GRAFO PRINCIPAL DE NAVEGACIÓN
- * Configura las rutas y el flujo de navegación para el módulo Administrador.
+ * Configura las rutas y el flujo de navegación para el módulo Administrador y Votación Estudiantil.
  */
 @Composable
 fun AppNavigation(
@@ -50,6 +51,19 @@ fun AppNavigation(
                         }
                     }
                 },
+                onIrAVotarClick = {
+                    navController.navigate(Screen.Votacion.route)
+                }
+            )
+        }
+
+        composable(Screen.Votacion.route) {
+            VotacionScreen(
+                onVolverAlLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
             )
         }
 
@@ -78,6 +92,7 @@ fun AppNavigation(
             ProtectedDestination(navController = navController) {
                 InstitucionesScreen(
                     onBack = { navController.popBackStack() },
+                    onNavigate = { route -> handleBottomNavigation(navController, route) }
                 )
             }
         }
@@ -86,6 +101,7 @@ fun AppNavigation(
             ProtectedDestination(navController = navController) {
                 UsuariosScreen(
                     onBack = { navController.popBackStack() },
+                    onNavigate = { route -> handleBottomNavigation(navController, route) }
                 )
             }
         }
@@ -129,6 +145,7 @@ fun AppNavigation(
             ProtectedDestination(navController = navController) {
                 EleccionesScreen(
                     onBack = { navController.popBackStack() },
+                    onNavigate = { route -> handleBottomNavigation(navController, route) }
                 )
             }
         }
