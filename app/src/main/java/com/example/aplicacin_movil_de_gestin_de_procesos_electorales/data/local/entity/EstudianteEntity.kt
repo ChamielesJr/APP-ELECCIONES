@@ -24,6 +24,7 @@ data class EstudianteEntity(
     val nombre: String,
     val apellido: String,
     val cursoId: Int, // Relación con la tabla Cursos
-    val voto: Boolean = false, // Control de participación (Prevenir votos duplicados)
+    val numeroLista: Int = 0, // Posición/número ordinal del estudiante en la lista de su aula
+    val voto: Boolean = false, // Control de participación local
     val estado: Boolean = true // Para habilitar/deshabilitar (RF07)
 )

@@ -30,7 +30,6 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboar
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardStatistics
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardTopBar
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.ElectionStatusCard
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.WelcomeCard
 
 @Composable
@@ -80,9 +79,8 @@ fun DashboardScreen(
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = Color(0xFFF8FAFC) // Fondo gris extra claro limpio
+        containerColor = Color(0xFFF8FAFC)
     ) { paddingValues ->
-        // Contenido principal con desplazamiento vertical
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -94,7 +92,7 @@ fun DashboardScreen(
             // 1. Tarjeta de Bienvenida
             WelcomeCard()
 
-            // 2. Tarjetas Estadísticas conectadas a Room DAOs (Exclusivamente informativas)
+            // 2. Tarjetas Estadísticas informativas
             DashboardStatistics(
                 totalCursos = uiState.totalCursos,
                 totalEstudiantes = uiState.totalEstudiantesHabilitados,
@@ -102,21 +100,19 @@ fun DashboardScreen(
                 totalVotos = uiState.votosRegistrados
             )
 
-            // 3. Sección "Administración del sistema" (5 tarjetas interactivas con navegación)
+            // 3. Sección "Administración del sistema" (8 tarjetas interactivas)
             AdministrationSection(
                 onCursosClick = onCursosClick,
                 onEstudiantesClick = onEstudiantesClick,
                 onListasClick = onListasClick,
+                onUsuariosClick = onUsuariosClick,
+                onInstitucionesClick = onInstitucionesClick,
+                onEleccionesClick = onEleccionesClick,
                 onConfiguracionClick = onConfiguracionClick,
-                onResultadosClick = onResultadosClick
-            )
-
-            // 4. Panel "Estado de la elección"
-            ElectionStatusCard(
-                estadoTexto = uiState.estadoEleccion,
-                isEleccionAbierta = uiState.isEleccionAbierta,
-                onAbrirVotacionClick = { viewModel.onAbrirVotacionClick() },
-                onCerrarVotacionClick = { viewModel.onCerrarVotacionClick() }
+                onResultadosClick = onResultadosClick,
+                totalUsuarios = uiState.totalUsuarios,
+                totalInstituciones = uiState.totalInstituciones,
+                totalProcesos = uiState.totalProcesos
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -160,40 +156,6 @@ fun DashboardScreen(
                     Text(
                         text = "Cancelar",
                         color = Color(0xFF64748B)
-                    )
-                }
-            },
-            containerColor = Color.White
-        )
-    }
-
-    // Diálogo de Información sobre Estado de Elección
-    if (uiState.showStatusDialog && uiState.dialogMessage != null) {
-        AlertDialog(
-            onDismissRequest = { viewModel.onDismissStatusDialog() },
-            title = {
-                Text(
-                    text = "Proceso Electoral",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Color(0xFF0F172A)
-                )
-            },
-            text = {
-                Text(
-                    text = uiState.dialogMessage!!,
-                    fontSize = 14.sp,
-                    color = Color(0xFF475569)
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { viewModel.onDismissStatusDialog() }
-                ) {
-                    Text(
-                        text = "Entendido",
-                        color = Color(0xFF2563EB),
-                        fontWeight = FontWeight.Bold
                     )
                 }
             },

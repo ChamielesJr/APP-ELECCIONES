@@ -3,7 +3,7 @@ package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation
 /**
  * RUTAS DE NAVEGACIÓN
  *
- * Centraliza las definiciones de rutas para todos los módulos del Administrador.
+ * Centraliza las definiciones de rutas para todos los módulos del Administrador y Votación Estudiantil.
  */
 sealed class Screen(val route: String) {
     data object Login : Screen("login")
@@ -17,4 +17,5 @@ sealed class Screen(val route: String) {
     data object Candidatos : Screen("candidatos")
     data object Configuracion : Screen("configuracion")
     data object Resultados : Screen("resultados")
+    data object Votacion : Screen("votacion")
 }

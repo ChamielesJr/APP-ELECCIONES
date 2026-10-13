@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class CursoEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+    val institucionId: Int = 1, // Relación con la Institución Educativa
     val grado: String,      // Ej: "Primero", "Segundo", "Inicial 1"
     val paralelo: String,   // Ej: "A", "B"
     val jornada: String,    // Ej: "Matutina", "Vespertina"

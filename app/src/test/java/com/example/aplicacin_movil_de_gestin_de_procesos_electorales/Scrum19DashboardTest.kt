@@ -79,8 +79,8 @@ class Scrum19DashboardTest {
     @Test
     fun test04_CalculoDeEstadisticasDesdeEntidadesRoom() {
         val cursos = listOf(
-            CursoEntity(1, "Primero", "A", "Matutina", "Bachillerato"),
-            CursoEntity(2, "Segundo", "B", "Vespertina", "Bachillerato")
+            CursoEntity(id = 1, institucionId = 1, grado = "Primero", paralelo = "A", jornada = "Matutina", nivel = "Bachillerato"),
+            CursoEntity(id = 2, institucionId = 1, grado = "Segundo", paralelo = "B", jornada = "Vespertina", nivel = "Bachillerato")
         )
 
         val estudiantes = listOf(
