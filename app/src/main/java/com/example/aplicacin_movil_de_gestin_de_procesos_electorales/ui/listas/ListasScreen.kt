@@ -1,7 +1,7 @@
-
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.listas
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,67 +17,92 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.CandidatoEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.ListaElectoralEntity
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.UsuarioEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.ListaElectoralRepository
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Assignment
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.filled.Edit
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardTopBar
+import java.io.File
 
-private val AzulElectoral = Color(0xFF2463EB)
-private val FondoElectoral = Color(0xFFF4F7FC)
-private val RojoAccion = Color(0xFFDC2626)
-private val VerdeEstado = Color(0xFFD1FAE5)
-private val TextoEstado = Color(0xFF065F46)
+private val AzulPrimario = Color(0xFF2468F2)
+private val AzulMarino = Color(0xFF101B55)
+private val AzulGrisaceo = Color(0xFF667DAA)
+private val FondoGeneral = Color(0xFFF5F8FE)
+private val RojoEliminar = Color(0xFFE52525)
+private val VerdeEstadoFondo = Color(0xFFD6FAE7)
+private val VerdeEstadoTexto = Color(0xFF176C43)
+private val AmarilloCirculo = Color(0xFFFFF0C4)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListasScreen(
+    currentUserParam: UsuarioEntity? = null,
+    onLogoutClick: () -> Unit = {},
     onBack: () -> Unit = {},
     onNavigate: (String) -> Unit = {},
 ) {
+    val sessionUser by SessionManager.currentUser.collectAsState()
+    val currentUser = currentUserParam ?: sessionUser
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     val context = LocalContext.current
     val database = AppDatabase.getInstance(context)
 
-    val factory = androidx.compose.runtime.remember(context) {
+    val factory = remember(context) {
         ListaElectoralViewModelFactory(
             ListaElectoralRepository(
                 database.listaElectoralDao(),
-                database.candidatoDao()
+                database.candidatoDao(),
+                database
             )
         )
     }
@@ -87,15 +112,29 @@ fun ListasScreen(
     val candidatos by database.candidatoDao()
         .obtenerTodos()
         .collectAsState(initial = emptyList())
+
     var textoBusqueda by rememberSaveable { mutableStateOf("") }
     var mostrarFormulario by rememberSaveable { mutableStateOf(false) }
     var listaEnEdicion by rememberSaveable { mutableStateOf<ListaElectoralEntity?>(null) }
+    var listaAEliminar by rememberSaveable { mutableStateOf<ListaElectoralEntity?>(null) }
+    val focusManager = LocalFocusManager.current
 
     if (mostrarFormulario) {
+        val candidatosLista = candidatos.filter { it.listaId == (listaEnEdicion?.id ?: 0) }
+        val presExistente = candidatosLista.find { it.cargo.equals("Presidente", ignoreCase = true) }
+            ?: candidatosLista.firstOrNull()
+        val viceExistente = candidatosLista.find { it.cargo.contains("Vice", ignoreCase = true) }
+            ?: candidatosLista.getOrNull(1)
+
+        val presNombre = presExistente?.let { "${it.nombres} ${it.apellidos}".trim() } ?: ""
+        val viceNombre = viceExistente?.let { "${it.nombres} ${it.apellidos}".trim() } ?: ""
+
         ListaElectoralFormScreen(
             listaExistente = listaEnEdicion,
-            onGuardar = { lista ->
-                viewModel.guardar(lista)
+            presidenteExistente = presNombre,
+            vicepresidenteExistente = viceNombre,
+            onGuardarConCandidatos = { entidad, pres, vice ->
+                viewModel.guardar(entidad, pres, vice)
                 mostrarFormulario = false
                 listaEnEdicion = null
             },
@@ -127,8 +166,86 @@ fun ListasScreen(
                 nombresCandidatos.lowercase().contains(consulta)
     }
 
+    // Diálogo de Confirmación para Eliminar Lista
+    if (listaAEliminar != null) {
+        AlertDialog(
+            onDismissRequest = { listaAEliminar = null },
+            title = {
+                Text("Eliminar lista electoral", fontWeight = FontWeight.Bold, color = AzulMarino)
+            },
+            text = {
+                Text("¿Está seguro de que desea eliminar la lista «${listaAEliminar?.nombre}»? Esta acción eliminará los registros asociados y no se puede deshacer.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        listaAEliminar?.let { viewModel.eliminar(it) }
+                        listaAEliminar = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = RojoEliminar)
+                ) {
+                    Text("Eliminar", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { listaAEliminar = null }) {
+                    Text("Cancelar", color = AzulMarino)
+                }
+            }
+        )
+    }
+
+    // Diálogo de Confirmación para Cerrar Sesión
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(
+                    text = "Cerrar sesión",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF0F172A)
+                )
+            },
+            text = {
+                Text(
+                    text = "¿Está seguro que desea cerrar la sesión de Administrador?",
+                    fontSize = 14.sp,
+                    color = Color(0xFF475569)
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        SessionManager.logout()
+                        onLogoutClick()
+                        onNavigate(Screen.Login.route)
+                    }
+                ) {
+                    Text(
+                        text = "Cerrar sesión",
+                        color = Color(0xFFDC2626),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showLogoutDialog = false }
+                ) {
+                    Text(
+                        text = "Cancelar",
+                        color = Color(0xFF64748B)
+                    )
+                }
+            },
+            containerColor = Color.White
+        )
+    }
+
     Scaffold(
-        containerColor = FondoElectoral,
+        containerColor = FondoGeneral,
         bottomBar = {
             DashboardBottomNavigation(
                 currentRoute = Screen.Listas.route,
@@ -136,27 +253,20 @@ fun ListasScreen(
             )
         },
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            "Sistema de Elecciones Escolares",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            "Distrito 13D02",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
-                        )
-                    }
-                }
+            DashboardTopBar(
+                currentUser = currentUser,
+                onLogoutClick = { showLogoutDialog = true }
             )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        focusManager.clearFocus()
+                    })
+                }
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -165,20 +275,18 @@ fun ListasScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(
+                Box(
                     modifier = Modifier
-                        .size(58.dp)
+                        .size(54.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFFFEAB0)),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                        .background(AmarilloCirculo),
+                    contentAlignment = Alignment.Center
                 ) {
-                    //Text("☷", color = AzulElectoral, style = MaterialTheme.typography.headlineMedium)
                     Icon(
                         imageVector = Icons.Filled.Assignment,
                         contentDescription = "Listas electorales",
-                        tint = AzulElectoral,
-                        modifier = Modifier.size(34.dp)
+                        tint = AzulPrimario,
+                        modifier = Modifier.size(30.dp)
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
@@ -186,24 +294,31 @@ fun ListasScreen(
                         "Listas electorales",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF101B50)
+                        color = AzulMarino
                     )
                     Text(
                         "Administre las listas participantes en la elección.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF65779B)
+                        color = AzulGrisaceo
                     )
                 }
             }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedButton(
                     onClick = onBack,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = AzulMarino
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AzulPrimario)
                 ) {
-                    Text("← Regresar al Dashboard")
+                    Text("← Regresar al dashboard", fontWeight = FontWeight.Bold)
                 }
 
                 Button(
@@ -211,19 +326,22 @@ fun ListasScreen(
                         listaEnEdicion = null
                         mostrarFormulario = true
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AzulPrimario)
                 ) {
-                    Text("+ Registrar lista")
+                    Text("+ Registrar lista", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     OutlinedTextField(
                         value = textoBusqueda,
@@ -232,32 +350,49 @@ fun ListasScreen(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         placeholder = {
-                            Text("Buscar por nombre, número o candidato...")
+                            Text(
+                                "Buscar por nombre, presidente o vicepresidente...",
+                                color = AzulGrisaceo
+                            )
                         },
                         leadingIcon = {
-                            Text("⌕", style = MaterialTheme.typography.headlineSmall)
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = "Buscar",
+                                tint = AzulGrisaceo
+                            )
                         },
-                        trailingIcon = {
-                            if (textoBusqueda.isNotEmpty()) {
-                                TextButton(onClick = { textoBusqueda = "" }) {
-                                    Text("Limpiar")
-                                }
-                            }
-                        }
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFFF1F5FD),
+                            unfocusedContainerColor = Color(0xFFF1F5FD),
+                            focusedBorderColor = AzulPrimario,
+                            unfocusedBorderColor = Color.Transparent
+                        )
                     )
                     Button(
-                        onClick = { /* El filtro se aplica automáticamente al escribir. */ },
+                        onClick = {
+                            focusManager.clearFocus()
+                        },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AzulPrimario)
                     ) {
-                        Text("⌕   Buscar")
+                        Icon(
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Buscar", fontWeight = FontWeight.Bold)
                     }
                 }
             }
+
             when {
                 uiState.cargando -> {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        color = AzulPrimario
                     )
                 }
                 uiState.mensajeError != null -> {
@@ -271,95 +406,73 @@ fun ListasScreen(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        item {
-                            Text(
-                                "Listas activas (${listasFiltradas.size})",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF101B50)
-                            )
-                        }
-                        if (listasFiltradas.isEmpty()) {
-                            item {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = Color.White
-                                    )
-                                ) {
-                                    Text(
-                                        text = if (uiState.listas.isEmpty()) {
-                                            "Todavía no hay listas registradas. Pulsa «Registrar lista» para comenzar."
-                                        } else {
-                                            "No se encontraron listas con esa búsqueda."
-                                        },
-                                        modifier = Modifier.padding(20.dp),
-                                        color = Color.Gray
-                                    )
-                                }
-                            }
-                        }
                         items(
                             items = listasFiltradas,
                             key = { "activa_${it.id}" }
                         ) { lista ->
-                            val candidatosLista = candidatos.filter {
-                                it.listaId == lista.id
-                            }
+                            val candidatosLista = candidatos.filter { it.listaId == lista.id }
                             TarjetaListaElectoral(
                                 lista = lista,
-                                nombresCandidatos = candidatosLista.map {
-                                    "${it.nombres} ${it.apellidos}"
-                                },
-                                activa = true,
+                                candidatos = candidatosLista,
+                                //activa = true,
                                 onEditar = {
                                     listaEnEdicion = lista
                                     mostrarFormulario = true
                                 },
-                                onCambiarEstado = {
-                                    viewModel.cambiarEstado(lista)
+                                onEliminar = {
+                                    listaAEliminar = lista
                                 }
                             )
                         }
-                        item {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                "Listas desactivadas (${desactivadasFiltradas.size})",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF101B50)
-                            )
-                        }
-                        if (desactivadasFiltradas.isEmpty()) {
+
+                        if (desactivadasFiltradas.isNotEmpty()) {
                             item {
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    "No hay listas desactivadas.",
-                                    modifier = Modifier.padding(vertical = 8.dp),
-                                    color = Color.Gray
+                                    "Listas desactivadas (${desactivadasFiltradas.size})",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AzulMarino
+                                )
+                            }
+                            items(
+                                items = desactivadasFiltradas,
+                                key = { "inactiva_${it.id}" }
+                            ) { lista ->
+                                val candidatosLista = candidatos.filter { it.listaId == lista.id }
+                                TarjetaListaElectoral(
+                                    lista = lista,
+                                    candidatos = candidatosLista,
+                                    //activa = false,
+                                    onEditar = {
+                                        listaEnEdicion = lista
+                                        mostrarFormulario = true
+                                    },
+                                    onEliminar = {
+                                        listaAEliminar = lista
+                                    }
                                 )
                             }
                         }
-                        items(
-                            items = desactivadasFiltradas,
-                            key = { "inactiva_${it.id}" }
-                        ) { lista ->
-                            val candidatosLista = candidatos.filter {
-                                it.listaId == lista.id
-                            }
-                            TarjetaListaElectoral(
-                                lista = lista,
-                                nombresCandidatos = candidatosLista.map {
-                                    "${it.nombres} ${it.apellidos}"
-                                },
-                                activa = false,
-                                onEditar = {
-                                    listaEnEdicion = lista
-                                    mostrarFormulario = true
-                                },
-                                onCambiarEstado = {
-                                    viewModel.cambiarEstado(lista)
+
+                        if (listasFiltradas.isEmpty() && desactivadasFiltradas.isEmpty()) {
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Text(
+                                        text = if (textoBusqueda.isBlank()) {
+                                            "No hay listas electorales registradas."
+                                        } else {
+                                            "No se encontraron listas que coincidan con la búsqueda."
+                                        },
+                                        modifier = Modifier.padding(20.dp),
+                                        color = AzulGrisaceo
+                                    )
                                 }
-                            )
+                            }
                         }
                     }
                 }
@@ -368,20 +481,36 @@ fun ListasScreen(
     }
 }
 
-
 @Composable
 private fun TarjetaListaElectoral(
     lista: ListaElectoralEntity,
-    nombresCandidatos: List<String>,
-    activa: Boolean,
+    candidatos: List<CandidatoEntity>,
+    //activa: Boolean,
     onEditar: () -> Unit,
-    onCambiarEstado: () -> Unit
+    onEliminar: () -> Unit
 ) {
-    val colorLista = try {
-        Color(android.graphics.Color.parseColor(lista.color))
-    } catch (_: Exception) {
-        Color.Gray
+    val colorLista = remember(lista.color) {
+        try {
+            Color(android.graphics.Color.parseColor(lista.color))
+        } catch (_: Exception) {
+            Color.Gray
+        }
     }
+
+    val presidente = candidatos.find {
+        it.cargo.equals("Presidente", ignoreCase = true) }
+        ?: candidatos.firstOrNull()
+    val vicepresidente = candidatos.find {
+        it.cargo.contains("Vice", ignoreCase = true) }
+        ?: candidatos.getOrNull(1)
+
+    /*val presNombre = presidente?.let { "${it.nombres} ${it.apellidos}".trim() }
+        ?: if (lista.nombre.trim().equals("Voto Nulo", ignoreCase = true)) "Voto Nulo" else "No registrado"
+    val viceNombre = vicepresidente?.let { "${it.nombres} ${it.apellidos}".trim() }
+        ?: if (lista.nombre.trim().equals("Voto Nulo", ignoreCase = true)) "No registrado" else "No registrado"*/
+    val presNombre = presidente?.let { "${it.nombres} ${it.apellidos}".trim() } ?: "No registrado"
+    val viceNombre = vicepresidente?.let { "${it.nombres} ${it.apellidos}".trim() } ?: "No registrado"
+
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -398,136 +527,165 @@ private fun TarjetaListaElectoral(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                // Zona 1: icono o logo y número de lista.
-                Column(
-                    modifier = Modifier.width(76.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFF1F5FD)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(68.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF0F2F7)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Assignment,
-                            contentDescription = "Logo de la lista",
-                            tint = AzulElectoral,
-                            modifier = Modifier.size(38.dp)
-                        )
-                    }
+                    if (lista.logo.isNotBlank()) {
+                        AsyncImage(
+                            model = remember(lista.logo) {
+                                val archivo = File(lista.logo)
 
-                    Text(
-                        text = "LISTA ${lista.numero}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                                if (archivo.isFile) {
+                                    archivo
+                                } else {
+                                    lista.logo
+                                }
+                            },
+                            contentDescription = "Logo ${lista.nombre}",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Person,
+                                contentDescription = "Sin logo",
+                                tint = AzulGrisaceo,
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Text(
+                                "Sin logo",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AzulGrisaceo
+                            )
+                        }
+                    }
                 }
 
-                // Zona 2: nombre, descripción y representantes.
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
                         text = lista.nombre,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF101B50)
+                        color = AzulMarino
                     )
 
-                    if (!lista.descripcion.isNullOrBlank()) {
+                    Text(
+                        text = "Número de lista: ${lista.numero}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AzulGrisaceo
+                    )
+
+                    Text(
+                        text = lista.descripcion?.ifBlank { null } ?: "-",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AzulGrisaceo
+                    )
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = null,
+                            tint = AzulGrisaceo,
+                            modifier = Modifier.size(16.dp)
+                        )
                         Text(
-                            text = lista.descripcion,
+                            text = presNombre,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF65779B)
+                            color = AzulGrisaceo
                         )
                     }
 
-                    if (nombresCandidatos.isEmpty()) {
-                        Text(
-                            "Sin candidatos registrados",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = null,
+                            tint = AzulGrisaceo,
+                            modifier = Modifier.size(16.dp)
                         )
-                    } else {
-                        nombresCandidatos.take(2).forEachIndexed { index, nombre ->
-                            Row(
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Person,
-                                    contentDescription = null,
-                                    tint = Color(0xFF65779B),
-                                    modifier = Modifier.size(17.dp)
-                                )
-
-                                Text(
-                                    text = "${if (index == 0) "Presidente" else "Vicepresidente"}: $nombre",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF65779B)
-                                )
-                            }
-                        }
+                        Text(
+                            text = viceNombre,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AzulGrisaceo
+                        )
                     }
                 }
 
-                // Zona 3: color, estado y espacio reservado para resultados.
                 Column(
-                    modifier = Modifier.width(88.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Spacer(
+                        Box(
                             modifier = Modifier
-                                .size(12.dp)
-                                .background(colorLista, CircleShape)
+                                .size(14.dp)
+                                .clip(CircleShape)
+                                .background(colorLista)
                         )
-
                         Text(
-                            text = lista.color,
+                            text = lista.color.lowercase(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF65779B)
+                            color = AzulGrisaceo
                         )
                     }
 
-                    Text(
-                        text = if (activa) "Activa" else "Desactivada",
+                    Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
-                            .background(
-                                if (activa) Color(0xFFD1FAE5)
-                                else Color(0xFFE5E7EB)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 5.dp),
-                        color = if (activa) Color(0xFF065F46) else Color.DarkGray,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                            //.background(if (activa) VerdeEstadoFondo else Color(0xFFE5E7EB))
+                            .background(if (lista.estado) { VerdeEstadoFondo } else { Color(0xFFE5E7EB) })
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            //text = if (activa) "Activa" else "Desactivada",
+                            //color = if (activa) VerdeEstadoTexto else Color(0xFF374151),
+                            text = if (lista.estado) "Activa" else "Inactiva",
+                            color = if (lista.estado) { VerdeEstadoTexto } else { Color(0xFF374151) },
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
 
-                    Icon(
-                        imageVector = Icons.Filled.BarChart,
-                        contentDescription = "Resultados electorales pendientes",
-                        tint = Color(0xFF65779B),
-                        modifier = Modifier.size(23.dp)
-                    )
+                    Spacer(modifier = Modifier.height(2.dp))
 
-                    Text(
-                        text = "Pendiente",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Icon(
+                            imageVector = Icons.Filled.BarChart,
+                            contentDescription = "Votos",
+                            tint = AzulMarino,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Sin datos de votos",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = AzulMarino
+                        )
+                    }
                 }
             }
 
-            // Acciones en la parte inferior derecha.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
@@ -535,39 +693,37 @@ private fun TarjetaListaElectoral(
             ) {
                 Button(
                     onClick = onEditar,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AzulPrimario)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Edit,
-                        contentDescription = null,
-                        modifier = Modifier.size(17.dp)
+                        contentDescription = "Editar",
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text("Editar")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Editar", fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Button(
-                    onClick = onCambiarEstado,
+                    onClick = onEliminar,
                     shape = RoundedCornerShape(8.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = if (activa) RojoAccion else AzulElectoral
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = RojoEliminar)
                 ) {
                     Icon(
-                        imageVector = if (activa) Icons.Filled.Block else Icons.Filled.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(17.dp)
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Eliminar",
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(if (activa) "Desactivar" else "Reactivar")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Eliminar", fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 }
-
 
 private class ListaElectoralViewModelFactory(
     private val repository: ListaElectoralRepository
@@ -577,8 +733,6 @@ private class ListaElectoralViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return ListaElectoralViewModel(repository) as T
         }
-        throw IllegalArgumentException(
-            "ViewModel desconocido: ${modelClass.name}"
-        )
+        throw IllegalArgumentException("ViewModel desconocido: ${modelClass.name}")
     }
 }

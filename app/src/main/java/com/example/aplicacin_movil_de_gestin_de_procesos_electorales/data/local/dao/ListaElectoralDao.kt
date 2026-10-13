@@ -32,6 +32,8 @@ interface ListaElectoralDao {
 
     @Query("SELECT * FROM lista_electoral ORDER BY numero ASC")
     fun observarActivas(): Flow<List<ListaElectoralEntity>>
+    //@Query("""SELECT * FROM lista_electoralWHERE estado = 1ORDER BY numero ASC""")
+    //fun observarActivas(): Flow<List<ListaElectoralEntity>>
 
     @Query("SELECT * FROM lista_electoral WHERE estado = 1 ORDER BY numero ASC")
     fun observarActivasEnTiempoReal(): Flow<List<ListaElectoralEntity>>

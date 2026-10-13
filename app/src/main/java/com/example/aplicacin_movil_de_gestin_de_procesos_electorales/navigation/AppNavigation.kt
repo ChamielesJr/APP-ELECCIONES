@@ -24,6 +24,7 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.instituc
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.listas.ListasScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.login.LoginScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.resultados.ResultadosScreen
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.theme.Aplicación_Movil_De_Gestión_De_Procesos_electoralesTheme
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.usuarios.UsuariosScreen
 
 /**
@@ -123,18 +124,28 @@ fun AppNavigation(
 
         composable(Screen.Listas.route) {
             ProtectedDestination(navController = navController) {
-                ListasScreen(
-                    onBack = { navController.popBackStack() },
-                    onNavigate = { route -> handleBottomNavigation(navController, route) }
-                )
+                Aplicación_Movil_De_Gestión_De_Procesos_electoralesTheme(
+                    darkTheme = false,
+                    dynamicColor = false
+                ) {
+                    ListasScreen(
+                        onBack = { navController.popBackStack() },
+                        onNavigate = { route -> handleBottomNavigation(navController, route) }
+                    )
+                }
             }
         }
 
         composable(Screen.Candidatos.route) {
             ProtectedDestination(navController = navController) {
-                CandidatosScreen(
-                    onBack = { navController.popBackStack() },
-                )
+                Aplicación_Movil_De_Gestión_De_Procesos_electoralesTheme(
+                    darkTheme = false,
+                    dynamicColor = false
+                ) {
+                    CandidatosScreen(
+                        onBack = { navController.popBackStack() },
+                    )
+                }
             }
         }
 
