@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.CursoRepositoryImpl
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.EstudianteRepositoryImpl
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.candidatos.CandidatosScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configuracion.ConfiguracionScreen
@@ -20,6 +21,7 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.cursos.C
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.DashboardScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.elecciones.EleccionesScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.estudiantes.EstudiantesScreen
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.estudiantes.EstudiantesViewModel
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.instituciones.InstitucionesScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.listas.ListasScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.login.LoginScreen
@@ -106,7 +108,16 @@ fun AppNavigation(
 
         composable(Screen.Estudiantes.route) {
             ProtectedDestination(navController = navController) {
+                val context = LocalContext.current
+                val database = AppDatabase.getInstance(context)
+                val estudianteRepository = EstudianteRepositoryImpl(database.estudianteDao())
+                val cursoRepository = CursoRepositoryImpl(database.cursoDao())
+                val viewModel: EstudiantesViewModel = viewModel(
+                    factory = EstudiantesViewModel.Factory(estudianteRepository, cursoRepository)
+                )
+
                 EstudiantesScreen(
+                    viewModel = viewModel,
                     onBack = { navController.popBackStack() },
                     onNavigate = { route -> handleBottomNavigation(navController, route) }
                 )
