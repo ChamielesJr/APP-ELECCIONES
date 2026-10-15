@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
  * Data Access Object (DAO) para la gestión de operaciones de base de datos de Instituciones Educativas.
  */
 @Dao
-interface InstitucionDao {
+interface  InstitucionDao {
 
     /**
      * Inserta una nueva institución en la base de datos.
