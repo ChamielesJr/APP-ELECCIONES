@@ -16,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +26,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.UsuarioEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
@@ -36,6 +37,7 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configur
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configuracion.componentes.FechasOpcionesSection
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardTopBar
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.di.AppContainer
 
 @Composable
 fun ConfiguracionScreen(
@@ -47,22 +49,31 @@ fun ConfiguracionScreen(
     val context = LocalContext.current
 
     // Obtener sesión del usuario actual
-    val sessionUser by SessionManager.currentUser.collectAsState()
+    val sessionUser by SessionManager.currentUser.collectAsStateWithLifecycle()
     val currentUser = currentUserParam ?: sessionUser
 
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    // Instanciamos el ViewModel pasándole el contexto para Room
-    val viewModel = remember { ConfiguracionViewModel(context) }
-    val state by viewModel.uiState.collectAsState()
+    // Instanciación del ViewModel mediante la fábrica
+    val appContainer = remember(context) { AppContainer(context) }
 
+// 2. Instanciar la fábrica pasándole los repositorios del contenedor
+    val factory = remember(appContainer) {
+        ConfiguracionViewModelFactory(
+            institucionRepo = appContainer.institucionRepository,
+            procesoRepo = appContainer.procesoElectoralRepository
+        )
+    }
+    val viewModel: ConfiguracionViewModel = viewModel(factory = factory)
+
+    // Consumo seguro del estado alineado al ciclo de vida
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     var isErrorInstitucion by remember { mutableStateOf(false) }
     var isErrorMensaje by remember { mutableStateOf(false) }
     var isErrorEleccion by remember { mutableStateOf(false) }
     var isErrorEscudo by remember { mutableStateOf(false) }
     var isErrorFechas by remember { mutableStateOf(false) }
-
 
     if (showLogoutDialog) {
         AlertDialog(

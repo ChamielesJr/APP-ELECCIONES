@@ -3,7 +3,7 @@ package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configu
 import android.net.Uri
 
 data class ConfiguracionState(
-    val esModoEdicion: Boolean = false,
+    val esModoEdicion: Boolean = true,
     val estado: String = "En curso",
     val votacionAbierta: Boolean = true,
     val nombreInstitucion: String = "",
@@ -16,7 +16,6 @@ data class ConfiguracionState(
     val horaFin: String = "",
     val habilitarEleccion: Boolean = true,
     val publicarResultados: Boolean = true,
-
 
     val errorNombreInstitucion: Boolean = false,
     val errorMensajeInstitucional: Boolean = false,

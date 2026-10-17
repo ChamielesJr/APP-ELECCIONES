@@ -1,12 +1,12 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configuracion
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.InstitucionEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.ProcesoElectoralEntity
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.InstitucionRepository
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.ProcesoElectoralRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,61 +19,48 @@ import java.util.Date
 import java.util.Locale
 
 class ConfiguracionViewModel(
-    context: Context
+    private val institucionRepository: InstitucionRepository,
+    private val procesoElectoralRepository: ProcesoElectoralRepository
 ) : ViewModel() {
-
-
-    private val db = AppDatabase.getInstance(context)
-    private val institucionDao = db.institucionDao()
-    private val procesoElectoralDao = db.procesoElectoralDao()
 
     private val _uiState = MutableStateFlow(ConfiguracionState())
     val uiState: StateFlow<ConfiguracionState> = _uiState.asStateFlow()
 
-    private var procesoExistenteId: Int = 0
-    private var institucionExistenteId: Int = 1
+    private var procesoExistente: ProcesoElectoralEntity? = null
+    private var institucionExistente: InstitucionEntity? = null
 
     init {
         cargarDatosDesdeRoom()
     }
 
-
     fun cargarDatosDesdeRoom() {
         viewModelScope.launch(Dispatchers.IO) {
-            // Obtenemos la lista de procesos habilitados
-            val listaProcesos: List<ProcesoElectoralEntity>? = procesoElectoralDao.obtenerHabilitados().firstOrNull()
-            val procesoActual: ProcesoElectoralEntity? = listaProcesos?.firstOrNull()
+            // Usa obtenerTodosProcesos() que sí existe en tu ProcesoElectoralRepository
+            val listaProcesos = procesoElectoralRepository.obtenerTodosProcesos().firstOrNull()
+            val procesoActual = listaProcesos?.firstOrNull()
 
-            if (procesoActual != null) {
-                procesoExistenteId = procesoActual.id
-                institucionExistenteId = procesoActual.institucionId
+            // Usa obtenerTodas() que sí existe en tu InstitucionRepository
+            val listaInstituciones = institucionRepository.obtenerTodas().firstOrNull()
+            val institucionActual = listaInstituciones?.firstOrNull()
 
-                val institucion: InstitucionEntity? = institucionDao.obtenerInstitucionPorId(procesoActual.institucionId)
+            procesoExistente = procesoActual
+            institucionExistente = institucionActual
 
-                _uiState.update { state ->
-                    state.copy(
-                        nombreInstitucion = institucion?.nombre ?: "",
-                        mensajeInstitucional = procesoActual.mensajeInstitucional,
-                        nombreEleccion = procesoActual.titulo,
-                        fechaInicio = procesoActual.fechaInicio,
-                        horaInicio = procesoActual.horaInicio,
-                        fechaFin = procesoActual.fechaFin,
-                        horaFin = procesoActual.horaFin,
-                        habilitarEleccion = procesoActual.estado == "HABILITADO",
-                        publicarResultados = true
-                    )
-                }
-            } else {
-                val listaInstituciones: List<InstitucionEntity>? = institucionDao.obtenerTodasInstituciones().firstOrNull()
-                val institucion: InstitucionEntity? = listaInstituciones?.firstOrNull()
-                if (institucion != null) {
-                    institucionExistenteId = institucion.id
-                    _uiState.update { it.copy(nombreInstitucion = institucion.nombre) }
-                }
+            _uiState.update { state ->
+                state.copy(
+                    nombreInstitucion = institucionActual?.nombre ?: "",
+                    mensajeInstitucional = procesoActual?.mensajeInstitucional ?: "",
+                    nombreEleccion = procesoActual?.titulo ?: "",
+                    fechaInicio = procesoActual?.fechaInicio ?: "",
+                    horaInicio = procesoActual?.horaInicio ?: "",
+                    fechaFin = procesoActual?.fechaFin ?: "",
+                    horaFin = procesoActual?.horaFin ?: "",
+                    habilitarEleccion = procesoActual?.estado == "HABILITADO",
+                    publicarResultados = true
+                )
             }
         }
     }
-
 
     fun onNombreInstitucionChanged(value: String) {
         _uiState.update { it.copy(nombreInstitucion = value, errorNombreInstitucion = value.isBlank()) }
@@ -81,7 +68,7 @@ class ConfiguracionViewModel(
 
     fun onMensajeInstitucionalChanged(value: String) {
         if (value.length <= ConfiguracionState.MAX_MENSAJE) {
-            _uiState.update { it.copy(mensajeInstitucional = value) }
+            _uiState.update { it.copy(mensajeInstitucional = value, errorMensajeInstitucional = value.isBlank()) }
         }
     }
 
@@ -90,7 +77,7 @@ class ConfiguracionViewModel(
     }
 
     fun onEscudoSeleccionado(uri: Uri?) {
-        _uiState.update { it.copy(escudoUri = uri) }
+        _uiState.update { it.copy(escudoUri = uri, errorEscudo = uri == null) }
     }
 
     fun onFechaInicioChanged(value: String) { _uiState.update { it.copy(fechaInicio = value) } }
@@ -100,10 +87,8 @@ class ConfiguracionViewModel(
     fun onHabilitarEleccionChanged(value: Boolean) { _uiState.update { it.copy(habilitarEleccion = value) } }
     fun onPublicarResultadosChanged(value: Boolean) { _uiState.update { it.copy(publicarResultados = value) } }
 
-    // Guardar en la base de datos
     fun guardarConfiguracion(onExito: () -> Unit, onError: (String) -> Unit) {
         val state = _uiState.value
-
 
         if (state.nombreInstitucion.isBlank() || state.mensajeInstitucional.isBlank() ||
             state.nombreEleccion.isBlank() || state.escudoUri == null ||
@@ -115,49 +100,36 @@ class ConfiguracionViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val fechaActual = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
-
-                // A) Guardar/Actualizar la Institución
-                val institucionEntity = InstitucionEntity(
-                    id = institucionExistenteId,
-                    nombre = state.nombreInstitucion,
-                    codigoInstitucional = "13D02-INST",
-                    direccion = "Dirección por defecto",
-                    telefono = "0900000000",
-                    correo = "contacto@institucion.edu.ec",
-                    distrito = "13D02",
-                    estado = true,
-                    fechaRegistro = fechaActual
-                )
-
-                val instExistente = institucionDao.obtenerInstitucionPorId(institucionExistenteId)
-                if (instExistente == null) {
-                    institucionDao.insertarInstitucion(institucionEntity)
+                // 1. Guardar/Actualizar la Institución mediante registrartInstitucion/actualizarInstitucion de tu InstitucionRepository
+                if (institucionExistente == null) {
+                    institucionRepository.registrarInstitucion(
+                        nombre = state.nombreInstitucion,
+                        codigo = "13D02-INST",
+                        direccion = "Dirección por defecto",
+                        telefono = "0900000000",
+                        correo = "contacto@institucion.edu.ec",
+                        distrito = "13D02",
+                        estado = true
+                    )
                 } else {
-                    institucionDao.actualizarInstitucion(institucionEntity)
+                    val institucionActualizada = institucionExistente!!.copy(
+                        nombre = state.nombreInstitucion
+                    )
+                    institucionRepository.actualizarInstitucion(institucionActualizada)
                 }
 
-
-                val estadoProceso = if (state.habilitarEleccion) "HABILITADO" else "PROGRAMADO"
-
-                val procesoEntity = ProcesoElectoralEntity(
-                    id = procesoExistenteId,
-                    institucionId = institucionExistenteId,
-                    titulo = state.nombreEleccion,
-                    mensajeInstitucional = state.mensajeInstitucional,
-                    fechaInicio = state.fechaInicio,
-                    horaInicio = state.horaInicio,
-                    fechaFin = state.fechaFin,
-                    horaFin = state.horaFin,
-                    estado = estadoProceso,
-                    fechaCreacion = fechaActual
-                )
-
-                if (procesoExistenteId == 0) {
-                    val idGenerada = procesoElectoralDao.insertar(procesoEntity)
-                    procesoExistenteId = idGenerada.toInt()
-                } else {
-                    procesoElectoralDao.actualizar(procesoEntity)
+                // 2. Gestionar el estado del Proceso Electoral usando las funciones de tu ProcesoElectoralRepository
+                val proceso = procesoExistente
+                if (proceso != null) {
+                    if (state.habilitarEleccion) {
+                        if (proceso.estado == "PROGRAMADO" || proceso.estado == "SUSPENDIDO") {
+                            procesoElectoralRepository.habilitarProceso(proceso)
+                        }
+                    } else {
+                        if (proceso.estado == "HABILITADO") {
+                            procesoElectoralRepository.suspenderProceso(proceso)
+                        }
+                    }
                 }
 
                 viewModelScope.launch(Dispatchers.Main) {
