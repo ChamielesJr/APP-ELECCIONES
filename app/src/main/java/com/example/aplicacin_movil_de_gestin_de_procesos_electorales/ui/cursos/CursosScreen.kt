@@ -49,6 +49,10 @@ fun CursosScreen(
     val cursos by viewModel.cursosState.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
 
+    // Estados para controlar el formulario modal
+    var showFormDialog by remember { mutableStateOf(false) }
+    var cursoAEditar by remember { mutableStateOf<CursoEntity?>(null) }
+
     Scaffold(
         containerColor = BackgroundGray,
         topBar = {
@@ -61,7 +65,6 @@ fun CursosScreen(
                     .padding(horizontal = 4.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 1. Botón de retroceso
                 IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = DarkBlue)
                 }
@@ -163,7 +166,8 @@ fun CursosScreen(
 
                 Button(
                     onClick = {
-                        viewModel.agregarCurso("Cuarto", "A", "Matutina", "Básica")
+                        cursoAEditar = null // Indicamos que es un registro nuevo
+                        showFormDialog = true // Mostramos el diálogo
                     },
                     modifier = Modifier.height(38.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
@@ -231,7 +235,10 @@ fun CursosScreen(
                         items(cursos) { curso ->
                             CursoRow(
                                 curso = curso,
-                                onEdit = { /* TODO: SCRUM-22 */ },
+                                onEdit = {
+                                    cursoAEditar = curso // Pasamos el curso a editar
+                                    showFormDialog = true // Abrimos el modal
+                                },
                                 onDelete = { viewModel.eliminarCurso(curso) }
                             )
                             HorizontalDivider(color = BorderGray, thickness = 0.5.dp)
@@ -282,6 +289,30 @@ fun CursosScreen(
                 }
             }
         }
+    }
+
+    // Modal del Formulario (Aparece cuando showFormDialog es true)
+    if (showFormDialog) {
+        CursoFormDialog(
+            curso = cursoAEditar,
+            onDismiss = { showFormDialog = false },
+            onSave = { grado, paralelo, jornada, nivel ->
+                if (cursoAEditar == null) {
+                    // MODO CREAR
+                    viewModel.agregarCurso(grado, paralelo, jornada, nivel)
+                } else {
+                    // MODO EDITAR
+                    val editado = cursoAEditar!!.copy(
+                        grado = grado,
+                        paralelo = paralelo,
+                        jornada = jornada,
+                        nivel = nivel
+                    )
+                    viewModel.actualizarCurso(editado)
+                }
+                showFormDialog = false // Cerramos el diálogo después de guardar
+            }
+        )
     }
 }
 
@@ -380,4 +411,117 @@ fun CursoRow(curso: CursoEntity, onEdit: () -> Unit, onDelete: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun CursoFormDialog(
+    curso: CursoEntity? = null,
+    onDismiss: () -> Unit,
+    onSave: (grado: String, paralelo: String, jornada: String, nivel: String) -> Unit
+) {
+    var grado by remember { mutableStateOf(curso?.grado ?: "") }
+    var paralelo by remember { mutableStateOf(curso?.paralelo ?: "") }
+    var jornada by remember { mutableStateOf(curso?.jornada ?: "") }
+    var nivel by remember { mutableStateOf(curso?.nivel ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        title = {
+            Text(
+                text = if (curso == null) "Registrar Nuevo Curso" else "Editar Curso",
+                color = DarkBlue,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = grado,
+                    onValueChange = { grado = it },
+                    label = { Text("Curso / Grado", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black,
+                        focusedBorderColor = PrimaryBlue,
+                        unfocusedBorderColor = BorderGray
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = paralelo,
+                    onValueChange = { paralelo = it },
+                    label = { Text("Paralelo", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black,
+                        focusedBorderColor = PrimaryBlue,
+                        unfocusedBorderColor = BorderGray
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = jornada,
+                    onValueChange = { jornada = it },
+                    label = { Text("Jornada", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black,
+                        focusedBorderColor = PrimaryBlue,
+                        unfocusedBorderColor = BorderGray
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = nivel,
+                    onValueChange = { nivel = it },
+                    label = { Text("Nivel", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black,
+                        focusedBorderColor = PrimaryBlue,
+                        unfocusedBorderColor = BorderGray
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSave(grado, paralelo, jornada, nivel) },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Guardar", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar", color = TextGray, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }
