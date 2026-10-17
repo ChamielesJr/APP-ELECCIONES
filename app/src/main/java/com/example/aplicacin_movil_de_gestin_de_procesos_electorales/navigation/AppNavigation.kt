@@ -29,6 +29,7 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.resultad
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.theme.Aplicación_Movil_De_Gestión_De_Procesos_electoralesTheme
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.usuarios.UsuariosScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.votacion.VotacionScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 
 /**
  * GRAFO PRINCIPAL DE NAVEGACIÓN
@@ -125,13 +126,7 @@ fun AppNavigation(
 
         composable(Screen.Estudiantes.route) {
             ProtectedDestination(navController = navController) {
-                val context = LocalContext.current
-                val database = AppDatabase.getInstance(context)
-                val estudianteRepository = EstudianteRepositoryImpl(database.estudianteDao())
-                val cursoRepository = CursoRepositoryImpl(database.cursoDao())
-                val viewModel: EstudiantesViewModel = viewModel(
-                    factory = EstudiantesViewModel.Factory(estudianteRepository, cursoRepository)
-                )
+                val viewModel: EstudiantesViewModel = hiltViewModel()
 
                 EstudiantesScreen(
                     viewModel = viewModel,
