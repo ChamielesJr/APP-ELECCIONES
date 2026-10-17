@@ -1,21 +1,22 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.estudiantes
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.CursoEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.EstudianteEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.CursoRepository
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.EstudianteRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
 
 /**
- * Modelo de datos auxiliar que une la información del estudiante con su respectivo curso.
+- Modelo de datos auxiliar que une la información del estudiante con su respectivo curso.
  */
 data class EstudianteWithCurso(
     val estudiante: EstudianteEntity,
@@ -23,10 +24,11 @@ data class EstudianteWithCurso(
 )
 
 /**
- * ViewModel para el módulo de Estudiantes.
- * Gestiona el estado reactivo mediante StateFlow y aplica los filtros de búsqueda, grado, paralelo, jornada y estado.
+- ViewModel para el módulo de Estudiantes (Migrado a Dagger Hilt).
+- Gestiona el estado reactivo mediante StateFlow y aplica los filtros.
  */
-class EstudiantesViewModel(
+@HiltViewModel // <- 1. Le dice a Hilt que este es un ViewModel inyectable
+class EstudiantesViewModel @Inject constructor( // <- 2. Le dice a Hilt que inyecte los repositorios aquí
     private val estudianteRepository: EstudianteRepository,
     private val cursoRepository: CursoRepository
 ) : ViewModel() {
@@ -88,9 +90,9 @@ class EstudiantesViewModel(
         }.filter { item ->
             val curso = item.curso
             val matchQuery = query.isBlank() ||
-                item.estudiante.nombre.contains(query, ignoreCase = true) ||
-                item.estudiante.apellido.contains(query, ignoreCase = true) ||
-                item.estudiante.cedula.contains(query, ignoreCase = true)
+                    item.estudiante.nombre.contains(query, ignoreCase = true) ||
+                    item.estudiante.apellido.contains(query, ignoreCase = true) ||
+                    item.estudiante.cedula.contains(query, ignoreCase = true)
 
             val matchGrado = grado.isNullOrBlank() || grado == "Todos" || curso?.grado == grado
             val matchParalelo = paralelo.isNullOrBlank() || paralelo == "Todos" || curso?.paralelo == paralelo
@@ -131,18 +133,5 @@ class EstudiantesViewModel(
         _selectedParalelo.value = null
         _selectedJornada.value = null
         _selectedEstado.value = null
-    }
-
-    class Factory(
-        private val estudianteRepository: EstudianteRepository,
-        private val cursoRepository: CursoRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(EstudiantesViewModel::class.java)) {
-                return EstudiantesViewModel(estudianteRepository, cursoRepository) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
-        }
     }
 }
