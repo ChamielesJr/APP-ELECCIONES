@@ -1,50 +1,172 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.resultados
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.di.AppContainer
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.UsuarioEntity
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardTopBar
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.resultados.componentes.ResultadosResumenSection
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.resultados.componentes.VotosPorListaSection
 
 @Composable
 fun ResultadosScreen(
+    currentUserParam: UsuarioEntity? = null,
+    onLogoutClick: () -> Unit = {},
     onBack: () -> Unit = {},
-    onNavigate: (String) -> Unit = {},
+    onNavigate: (String) -> Unit = {}
 ) {
-    Scaffold(
-        bottomBar = {
-            DashboardBottomNavigation(
-                currentRoute = Screen.Resultados.route,
-                onNavigate = onNavigate
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+    val context = LocalContext.current
+
+    // Obtener sesión del usuario actual
+    val sessionUser by SessionManager.currentUser.collectAsStateWithLifecycle()
+    val currentUser = currentUserParam ?: sessionUser
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // 1. Instanciación del Contenedor de Dependencias
+    val appContainer = remember(context) { AppContainer(context) }
+    val db = remember(context) { AppDatabase.getInstance(context) }
+
+    // 2. Instanciar la fábrica pasándole los repositorios y DAOs del contenedor
+    val factory = remember(appContainer) {
+        ResultadosViewModelFactory(
+            listaElectoralRepository = appContainer.listaElectoralRepository,
+            procesoElectoralRepository = appContainer.procesoElectoralRepository,
+            votacionDao = db.votacionDao(),
+            candidatoDao = db.candidatoDao()
+        )
+    }
+    val viewModel: ResultadosViewModel = viewModel(factory = factory)
+
+    // Consumo seguro del estado alineado al ciclo de vida
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(
+                    text = "Cerrar sesión",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF0F172A)
+                )
+            },
+            text = {
+                Text(
+                    text = "¿Está seguro que desea cerrar la sesión de Administrador?",
+                    fontSize = 14.sp,
+                    color = Color(0xFF475569)
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        SessionManager.logout()
+                        onLogoutClick()
+                        onNavigate(Screen.Login.route)
+                    }
+                ) {
+                    Text(
+                        text = "Cerrar sesión",
+                        color = Color(0xFFDC2626),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showLogoutDialog = false }
+                ) {
+                    Text(
+                        text = "Cancelar",
+                        color = Color(0xFF64748B)
+                    )
+                }
+            },
+            containerColor = Color.White
+        )
+    }
+
+    MaterialTheme(
+        colorScheme = lightColorScheme(
+            background = Color.White,
+            surface = Color.White,
+            onBackground = Color(0xFF1C1B1F),
+            onSurface = Color(0xFF1C1B1F)
+        )
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color.White
         ) {
-            Text(
-                text = "Módulo de Resultados Electorales",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = onBack) {
-                Text(text = "Volver al Dashboard")
+            Scaffold(
+                containerColor = Color.White,
+                topBar = {
+                    DashboardTopBar(
+                        currentUser = currentUser,
+                        onLogoutClick = { showLogoutDialog = true },
+                    )
+                },
+                bottomBar = {
+                    DashboardBottomNavigation(
+                        currentRoute = Screen.Resultados.route,
+                        onNavigate = onNavigate
+                    )
+                }
+            ) { innerPadding ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp)
+                ) {
+
+                    // SECCIÓN 1: Resumen y Métricas Superiores
+                    ResultadosResumenSection(
+                        totalVotos = state.totalVotos,
+                        opcionesElectoralesCount = state.opcionesElectoralesCount,
+                        onVolverClick = onBack
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // SECCIÓN 2: Votos por Lista (Tabla y Barras)
+                    VotosPorListaSection(
+                        resultados = state.resultadosListas
+                    )
+                }
             }
         }
     }

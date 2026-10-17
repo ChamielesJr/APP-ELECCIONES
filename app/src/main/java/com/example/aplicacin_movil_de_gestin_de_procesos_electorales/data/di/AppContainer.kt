@@ -26,4 +26,13 @@ class AppContainer(private val context: Context) {
             db.votacionDao()
         )
     }
+
+    // Repositorio de Listas Electorales (Agregado para Resultados)
+    val listaElectoralRepository: ListaElectoralRepository by lazy {
+        ListaElectoralRepository(
+            listaElectoralDao = db.listaElectoralDao(),
+            candidatoDao = db.candidatoDao(),
+            database = db
+        )
+    }
 }
