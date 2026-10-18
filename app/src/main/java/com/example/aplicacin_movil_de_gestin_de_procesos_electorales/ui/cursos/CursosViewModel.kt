@@ -39,6 +39,12 @@ class CursosViewModel(
         }
     }
 
+    fun actualizarCurso(cursoActualizado: CursoEntity) {
+        viewModelScope.launch {
+            repository.actualizarCurso(cursoActualizado)
+        }
+    }
+
     class Factory(private val repository: CursoRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
