@@ -158,7 +158,10 @@ fun EstudiantesScreen(
                                 placeholder = { Text("Ej: 1350...", fontSize = 11.sp) },
                                 singleLine = true,
                                 shape = RoundedCornerShape(8.dp),
+                                textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp), // <-- TEXTO NEGRO Y NEGRITA
                                 colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
                                     unfocusedBorderColor = Color(0xFFE5E7EB)
                                 )
                             )
@@ -485,7 +488,14 @@ fun EstudianteFormDialog(
                     singleLine = true,
                     enabled = estudianteExistente == null,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedBorderColor = AzulElectoral,
+                        unfocusedBorderColor = Color(0xFFE5E7EB)
+                    )
                 )
                 OutlinedTextField(
                     value = nombre,
@@ -493,7 +503,14 @@ fun EstudianteFormDialog(
                     label = { Text("Nombres") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedBorderColor = AzulElectoral,
+                        unfocusedBorderColor = Color(0xFFE5E7EB)
+                    )
                 )
                 OutlinedTextField(
                     value = apellido,
@@ -501,7 +518,14 @@ fun EstudianteFormDialog(
                     label = { Text("Apellidos") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedBorderColor = AzulElectoral,
+                        unfocusedBorderColor = Color(0xFFE5E7EB)
+                    )
                 )
 
                 ExposedDropdownMenuBox(
@@ -516,12 +540,20 @@ fun EstudianteFormDialog(
                         label = { Text("Curso / Paralelo") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true).fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedBorderColor = AzulElectoral,
+                            unfocusedBorderColor = Color(0xFFE5E7EB)
+                        )
                     )
 
                     ExposedDropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.background(Color.White)
                     ) {
                         if (cursosDisponibles.isEmpty()) {
                             DropdownMenuItem(
@@ -553,7 +585,7 @@ fun EstudianteFormDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = AzulElectoral),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text(if (estudianteExistente == null) "Guardar" else "Actualizar", fontWeight = FontWeight.Bold)
+                Text(if (estudianteExistente == null) "Guardar" else "Actualizar", fontWeight = FontWeight.Bold, color = Color.White)
             }
         },
         dismissButton = {

@@ -47,7 +47,7 @@ fun CursosScreen(
     onNavigate: (String) -> Unit = {}
 ) {
     val cursos by viewModel.cursosState.collectAsStateWithLifecycle()
-    var searchQuery by remember { mutableStateOf("") }
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
     // Estados para controlar el formulario modal
     var showFormDialog by remember { mutableStateOf(false) }
@@ -185,11 +185,14 @@ fun CursosScreen(
             // 2. Buscador (Altura liberada para centrar el texto)
             OutlinedTextField(
                 value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(), // Quitamos el height forzado
+                onValueChange = { viewModel.updateSearchQuery(it) },
+                modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Buscar curso, paralelo o jornada...", color = TextGray, fontSize = 13.sp) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar", tint = TextGray, modifier = Modifier.size(22.dp)) },
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp), // <-- TEXTO NEGRO Y NEGRITA
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.Black, // <-- COLOR AL ESCRIBIR
+                    unfocusedTextColor = Color.Black, // <-- COLOR AL SALIR
                     unfocusedContainerColor = Color.White,
                     focusedContainerColor = Color.White,
                     unfocusedBorderColor = BorderGray,
