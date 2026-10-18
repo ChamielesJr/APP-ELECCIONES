@@ -171,4 +171,16 @@ class EstudiantesViewModel @Inject constructor(
             }
         }
     }
+
+    fun alternarEstadoEstudiante(estudianteActual: EstudianteEntity) {
+        viewModelScope.launch {
+            try {
+                // Creamos una copia del estudiante invirtiendo su estado actual (true -> false o false -> true)
+                val estudianteActualizado = estudianteActual.copy(estado = !estudianteActual.estado)
+                estudianteRepository.actualizarEstudiante(estudianteActualizado)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 }

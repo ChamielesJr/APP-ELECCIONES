@@ -221,23 +221,49 @@ fun EstudiantesScreen(
                                     // 5. NÚMERO (Aquí se pinta la Cédula del estudiante como me pediste)
                                     Text(item.estudiante.cedula, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1F2937), modifier = Modifier.width(110.dp))
 
-                                    // 6. Estado
+                                    // 6. Estado de Votación (Usamos 'voto' en lugar de 'estado')
                                     Box(modifier = Modifier.width(90.dp)) {
-                                        val (colorFondo, colorTexto, texto) = if (item.estudiante.estado) Triple(VerdeFondo, VerdeTexto, "Ya votó") else Triple(Color(0xFFFEF3C7), Color(0xFFB45309), "Pendiente")
+                                        val (colorFondo, colorTexto, texto) = if (item.estudiante.voto) {
+                                            Triple(VerdeFondo, VerdeTexto, "Ya votó")
+                                        } else {
+                                            Triple(Color(0xFFFEF3C7), Color(0xFFB45309), "Pendiente")
+                                        }
                                         Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(colorFondo).padding(horizontal = 8.dp, vertical = 4.dp)) {
                                             Text(texto, color = colorTexto, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                         }
                                     }
 
-                                    // 7. Acciones
-                                    TextButton(
-                                        onClick = {
-                                            estudianteEnEdicion = item.estudiante
-                                            mostrarFormulario = true
-                                        },
-                                        modifier = Modifier.width(90.dp)
+                                    // 7. Acciones (Editar y Bloquear/Activar)
+                                    Row(
+                                        modifier = Modifier.width(110.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Editar", fontSize = 12.sp, color = AzulElectoral, fontWeight = FontWeight.Bold)
+                                        // Botón Editar
+                                        TextButton(
+                                            onClick = {
+                                                estudianteEnEdicion = item.estudiante
+                                                mostrarFormulario = true
+                                            },
+                                            contentPadding = PaddingValues(0.dp),
+                                            modifier = Modifier.width(45.dp)
+                                        ) {
+                                            Text("Editar", fontSize = 12.sp, color = AzulElectoral, fontWeight = FontWeight.Bold)
+                                        }
+
+                                        // Botón Bloquear/Activar
+                                        TextButton(
+                                            onClick = { viewModel.alternarEstadoEstudiante(item.estudiante) },
+                                            contentPadding = PaddingValues(0.dp),
+                                            modifier = Modifier.width(60.dp)
+                                        ) {
+                                            Text(
+                                                text = if (item.estudiante.estado) "Bloquear" else "Activar",
+                                                fontSize = 12.sp,
+                                                color = if (item.estudiante.estado) Color(0xFFDC2626) else Color(0xFF16A34A),
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
                                 if (index < estudiantes.size - 1) {
