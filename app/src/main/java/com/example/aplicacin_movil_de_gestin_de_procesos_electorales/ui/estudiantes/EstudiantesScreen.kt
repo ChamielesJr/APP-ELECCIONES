@@ -55,6 +55,17 @@ fun EstudiantesScreen(
     var mostrarFormulario by remember { mutableStateOf(false) }
     var estudianteEnEdicion by remember { mutableStateOf<com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.EstudianteEntity?>(null) }
 
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val selectedGrado by viewModel.selectedGrado.collectAsStateWithLifecycle()
+    val selectedParalelo by viewModel.selectedParalelo.collectAsStateWithLifecycle()
+    val selectedJornada by viewModel.selectedJornada.collectAsStateWithLifecycle()
+    val selectedEstado by viewModel.selectedEstado.collectAsStateWithLifecycle()
+
+    // Extraemos opciones dinámicas únicas desde los cursos registrados
+    val gradosDisponibles = listOf("Todos") + cursosList.map { it.grado }.distinct().sorted()
+    val paralelosDisponibles = listOf("Todos") + cursosList.map { it.paralelo }.distinct().sorted()
+    val jornadasDisponibles = listOf("Todas") + cursosList.map { it.jornada }.distinct().sorted()
+
     Scaffold(
         topBar = { TopBarElectoral(onBack) },
         bottomBar = {
@@ -110,46 +121,79 @@ fun EstudiantesScreen(
             ) {
                 Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Buscar estudiantes", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF1F2937))
+
+                    // Fila 1: Grado, Paralelo, Jornada
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        FiltroDropdownSimulado("Grado", "Todos", Modifier.weight(1f))
-                        FiltroDropdownSimulado("Paralelo", "Todos", Modifier.weight(1f))
-                        FiltroDropdownSimulado("Jornada", "Todas", Modifier.weight(1f))
+                        FiltroDropdownInteractiva(
+                            label = "Grado",
+                            opciones = gradosDisponibles,
+                            seleccionActual = selectedGrado ?: "Todos",
+                            onSeleccionChange = { viewModel.updateGrado(if (it == "Todos") null else it) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FiltroDropdownInteractiva(
+                            label = "Paralelo",
+                            opciones = paralelosDisponibles,
+                            seleccionActual = selectedParalelo ?: "Todos",
+                            onSeleccionChange = { viewModel.updateParalelo(if (it == "Todos") null else it) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FiltroDropdownInteractiva(
+                            label = "Jornada",
+                            opciones = jornadasDisponibles,
+                            seleccionActual = selectedJornada ?: "Todas",
+                            onSeleccionChange = { viewModel.updateJornada(if (it == "Todas") null else it) },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
+
+                    // Fila 2: Buscador de texto y Estado
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(text = "Número de lista", style = MaterialTheme.typography.labelSmall, color = TextoSecundario, modifier = Modifier.padding(bottom = 2.dp), maxLines = 1)
+                            Text(text = "Buscador (Cédula, Nombres...)", style = MaterialTheme.typography.labelSmall, color = TextoSecundario, modifier = Modifier.padding(bottom = 2.dp), maxLines = 1)
                             OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
+                                value = searchQuery,
+                                onValueChange = { viewModel.updateSearchQuery(it) },
                                 modifier = Modifier.fillMaxWidth().height(50.dp),
-                                placeholder = { Text("Ej: 15", fontSize = 11.sp) },
+                                placeholder = { Text("Ej: 1350...", fontSize = 11.sp) },
                                 singleLine = true,
                                 shape = RoundedCornerShape(8.dp),
-                                enabled = false,
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    disabledBorderColor = Color(0xFFE5E7EB),
-                                    disabledTextColor = Color(0xFF1F2937),
-                                    disabledPlaceholderColor = TextoSecundario
+                                    unfocusedBorderColor = Color(0xFFE5E7EB)
                                 )
                             )
                         }
 
-                        FiltroDropdownSimulado("Estado", "Todos", Modifier.weight(1f))
+                        FiltroDropdownInteractiva(
+                            label = "Estado",
+                            opciones = listOf("Todos", "Activos", "Inactivos"),
+                            seleccionActual = when (selectedEstado) {
+                                true -> "Activos"
+                                false -> "Inactivos"
+                                null -> "Todos"
+                            },
+                            onSeleccionChange = {
+                                val estadoBool = when(it) {
+                                    "Activos" -> true
+                                    "Inactivos" -> false
+                                    else -> null
+                                }
+                                viewModel.updateEstado(estadoBool)
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Button(
-                            onClick = { }, modifier = Modifier.weight(1f).height(44.dp), colors = ButtonDefaults.buttonColors(containerColor = AzulElectoral), shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Buscar", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        }
+
+                    // Fila 3: Botón Limpiar (El botón Buscar ya no es estrictamente necesario porque reacciona en tiempo real, pero dejamos el Limpiar)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         OutlinedButton(
-                            onClick = { viewModel.limpiarFiltros() }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(8.dp)
+                            onClick = { viewModel.limpiarFiltros() },
+                            modifier = Modifier.height(44.dp),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
                             Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(16.dp), tint = TextoSecundario)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Limpiar", fontWeight = FontWeight.Medium, color = TextoSecundario, fontSize = 13.sp)
+                            Text("Limpiar filtros", fontWeight = FontWeight.Medium, color = TextoSecundario, fontSize = 13.sp)
                         }
                     }
                 }
@@ -339,14 +383,54 @@ fun TopBarElectoral(onBack: () -> Unit) {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FiltroDropdownSimulado(label: String, value: String, modifier: Modifier = Modifier) {
+fun FiltroDropdownInteractiva(
+    label: String,
+    opciones: List<String>,
+    seleccionActual: String,
+    onSeleccionChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+
     Column(modifier = modifier) {
         Text(text = label, style = MaterialTheme.typography.labelSmall, color = TextoSecundario, modifier = Modifier.padding(bottom = 2.dp), maxLines = 1)
-        Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = BorderStroke(1.dp, Color(0xFFE5E7EB))) {
-            Row(modifier = Modifier.fillMaxWidth().height(50.dp).padding(horizontal = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = value, fontSize = 12.sp, color = Color(0xFF1F2937), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                Icon(imageVector = Icons.Default.KeyboardArrowDown, contentDescription = null, tint = TextoSecundario, modifier = Modifier.size(16.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
+                modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(50.dp).padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = seleccionActual, fontSize = 12.sp, color = Color(0xFF1F2937), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    Icon(imageVector = Icons.Default.KeyboardArrowDown, contentDescription = null, tint = TextoSecundario, modifier = Modifier.size(16.dp))
+                }
+            }
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(Color.White)
+            ) {
+                opciones.forEach { opcion ->
+                    DropdownMenuItem(
+                        text = { Text(opcion, fontSize = 12.sp) },
+                        onClick = {
+                            onSeleccionChange(opcion)
+                            expanded = false
+                        }
+                    )
+                }
             }
         }
     }
