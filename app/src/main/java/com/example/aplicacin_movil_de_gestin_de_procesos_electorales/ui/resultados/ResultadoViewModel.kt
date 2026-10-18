@@ -7,6 +7,7 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.dao.VotacionDao
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.ListaElectoralRepository
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.ProcesoElectoralRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,8 +16,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ResultadosViewModel(
+@HiltViewModel
+class ResultadosViewModel @Inject constructor(
     private val listaElectoralRepository: ListaElectoralRepository,
     private val procesoElectoralRepository: ProcesoElectoralRepository,
     private val votacionDao: VotacionDao,

@@ -26,8 +26,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.UsuarioEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
@@ -37,36 +37,22 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configur
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configuracion.componentes.FechasOpcionesSection
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardTopBar
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.di.AppContainer
 
 @Composable
 fun ConfiguracionScreen(
     currentUserParam: UsuarioEntity? = null,
     onLogoutClick: () -> Unit = {},
     onBack: () -> Unit = {},
-    onNavigate: (String) -> Unit = {}
+    onNavigate: (String) -> Unit = {},
+    viewModel: ConfiguracionViewModel = hiltViewModel() // Hilt inyecta el ViewModel automáticamente
 ) {
     val context = LocalContext.current
 
-    // Obtener sesión del usuario actual
     val sessionUser by SessionManager.currentUser.collectAsStateWithLifecycle()
     val currentUser = currentUserParam ?: sessionUser
 
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    // Instanciación del ViewModel mediante la fábrica
-    val appContainer = remember(context) { AppContainer(context) }
-
-// 2. Instanciar la fábrica pasándole los repositorios del contenedor
-    val factory = remember(appContainer) {
-        ConfiguracionViewModelFactory(
-            institucionRepo = appContainer.institucionRepository,
-            procesoRepo = appContainer.procesoElectoralRepository
-        )
-    }
-    val viewModel: ConfiguracionViewModel = viewModel(factory = factory)
-
-    // Consumo seguro del estado alineado al ciclo de vida
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     var isErrorInstitucion by remember { mutableStateOf(false) }
@@ -165,7 +151,6 @@ fun ConfiguracionScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 1. Datos Institución
                     DatosInstitucionSection(
                         nombreInstitucion = state.nombreInstitucion,
                         onNombreInstitucionChange = {
@@ -183,7 +168,6 @@ fun ConfiguracionScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 2. Datos Elección y Escudo
                     DatosEleccionSection(
                         nombreEleccion = state.nombreEleccion,
                         onNombreEleccionChange = {
@@ -201,7 +185,6 @@ fun ConfiguracionScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 3. Fechas, Horarios, Opciones y Botones
                     FechasOpcionesSection(
                         fechaInicio = state.fechaInicio,
                         onFechaInicioChange = {

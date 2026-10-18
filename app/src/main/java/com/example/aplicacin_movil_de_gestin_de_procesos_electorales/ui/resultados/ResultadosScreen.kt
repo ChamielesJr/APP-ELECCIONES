@@ -21,14 +21,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.di.AppContainer
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.UsuarioEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
@@ -42,32 +39,14 @@ fun ResultadosScreen(
     currentUserParam: UsuarioEntity? = null,
     onLogoutClick: () -> Unit = {},
     onBack: () -> Unit = {},
-    onNavigate: (String) -> Unit = {}
+    onNavigate: (String) -> Unit = {},
+    viewModel: ResultadosViewModel = hiltViewModel() // Hilt inyecta el ViewModel automáticamente
 ) {
-    val context = LocalContext.current
-
-    // Obtener sesión del usuario actual
     val sessionUser by SessionManager.currentUser.collectAsStateWithLifecycle()
     val currentUser = currentUserParam ?: sessionUser
 
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    // 1. Instanciación del Contenedor de Dependencias
-    val appContainer = remember(context) { AppContainer(context) }
-    val db = remember(context) { AppDatabase.getInstance(context) }
-
-    // 2. Instanciar la fábrica pasándole los repositorios y DAOs del contenedor
-    val factory = remember(appContainer) {
-        ResultadosViewModelFactory(
-            listaElectoralRepository = appContainer.listaElectoralRepository,
-            procesoElectoralRepository = appContainer.procesoElectoralRepository,
-            votacionDao = db.votacionDao(),
-            candidatoDao = db.candidatoDao()
-        )
-    }
-    val viewModel: ResultadosViewModel = viewModel(factory = factory)
-
-    // Consumo seguro del estado alineado al ciclo de vida
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     if (showLogoutDialog) {
@@ -152,8 +131,6 @@ fun ResultadosScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp)
                 ) {
-
-                    // SECCIÓN 1: Resumen y Métricas Superiores
                     ResultadosResumenSection(
                         totalVotos = state.totalVotos,
                         opcionesElectoralesCount = state.opcionesElectoralesCount,
@@ -162,7 +139,6 @@ fun ResultadosScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // SECCIÓN 2: Votos por Lista (Tabla y Barras)
                     VotosPorListaSection(
                         resultados = state.resultadosListas
                     )

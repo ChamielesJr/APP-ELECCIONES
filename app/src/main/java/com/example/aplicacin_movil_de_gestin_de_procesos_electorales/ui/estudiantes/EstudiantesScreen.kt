@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,6 +28,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +46,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,11 +60,6 @@ private val TextoSecundario = Color(0xFF6B7280)
 private val ContenedorIcono = Color(0xFFE0E7FF)
 private val ColorIcono = Color(0xFF3730A3)
 
-/**
- * Pantalla principal de Estudiantes diseñada con el estilo visual de alta fidelidad (Maquetado).
- * Permite desplazamiento vertical completo (ideal para modo horizontal / landscape).
- * Respeta el uso exclusivo de StateFlow sin variables mutables de Compose prohibidas.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EstudiantesScreen(
@@ -120,7 +117,7 @@ fun EstudiantesScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Cabecera del módulo (Título y descripción con icono)
+            // Cabecera del módulo
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -155,7 +152,7 @@ fun EstudiantesScreen(
                 }
             }
 
-            // Tarjeta de Filtros y Búsqueda
+            // Tarjeta de Filtros
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -168,7 +165,6 @@ fun EstudiantesScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Barra de búsqueda principal
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { viewModel.updateSearchQuery(it) },
@@ -186,29 +182,15 @@ fun EstudiantesScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    // Filtros Fila 1: Grado, Paralelo, Jornada
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        FiltroDropdownSimulado(
-                            label = "Grado",
-                            value = "Todos",
-                            modifier = Modifier.weight(1f)
-                        )
-                        FiltroDropdownSimulado(
-                            label = "Paralelo",
-                            value = "Todos",
-                            modifier = Modifier.weight(1f)
-                        )
-                        FiltroDropdownSimulado(
-                            label = "Jornada",
-                            value = "Todas",
-                            modifier = Modifier.weight(1f)
-                        )
+                        FiltroDropdownSimulado(label = "Grado", value = "Todos", modifier = Modifier.weight(1f))
+                        FiltroDropdownSimulado(label = "Paralelo", value = "Todos", modifier = Modifier.weight(1f))
+                        FiltroDropdownSimulado(label = "Jornada", value = "Todas", modifier = Modifier.weight(1f))
                     }
 
-                    // Filtros Fila 2: Número de lista y Estado
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -223,16 +205,11 @@ fun EstudiantesScreen(
                             shape = RoundedCornerShape(12.dp),
                             enabled = false
                         )
-                        FiltroDropdownSimulado(
-                            label = "Estado",
-                            value = "Todos",
-                            modifier = Modifier.weight(1f)
-                        )
+                        FiltroDropdownSimulado(label = "Estado", value = "Todos", modifier = Modifier.weight(1f))
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Botones Buscar y Limpiar filtros
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -267,7 +244,7 @@ fun EstudiantesScreen(
                 }
             }
 
-            // Sección: Estudiantes registrados
+            // Tabla de Estudiantes
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -310,20 +287,22 @@ fun EstudiantesScreen(
                         )
                     }
 
-                    // Cabecera de la tabla de datos
+                    // Cabecera de la Tabla
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color(0xFFF9FAFB), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("ID", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(0.8f))
-                        Text("GRADO", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(1.5f))
-                        Text("PARALELO", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(1.2f))
-                        Text("JORNADA", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(1.5f))
-                        Text("ESTADO", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(1.5f))
-                        Text("ACCIONES", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(1.5f))
+                        Text("ID", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(0.7f))
+                        Text("GRADO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(1.3f))
+                        Text("PARALELO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(1.1f))
+                        Text("JORNADA", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(1.3f))
+                        Text("NÚMERO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(1.0f))
+                        Text("ESTADO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(1.4f))
+                        Text("ACCIONES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.weight(1.3f))
                     }
 
                     if (estudiantes.isEmpty()) {
@@ -342,10 +321,83 @@ fun EstudiantesScreen(
                     } else {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            for (item in estudiantes) {
-                                // Filas de estudiantes
+                            estudiantes.forEachIndexed { index, item ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp, horizontal = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // ID
+                                    Text(
+                                        text = "${item.estudiante.id}",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF374151),
+                                        modifier = Modifier.weight(0.7f)
+                                    )
+                                    // GRADO
+                                    Text(
+                                        text = item.curso?.grado ?: "Sin Curso",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF1F2937),
+                                        modifier = Modifier.weight(1.3f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    // PARALELO
+                                    Text(
+                                        text = item.curso?.paralelo ?: "-",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF374151),
+                                        modifier = Modifier.weight(1.1f)
+                                    )
+                                    // JORNADA
+                                    Text(
+                                        text = item.curso?.jornada ?: "-",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF374151),
+                                        modifier = Modifier.weight(1.3f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    // NÚMERO
+                                    Text(
+                                        text = "${item.estudiante.numeroLista ?: 1}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1F2937),
+                                        modifier = Modifier.weight(1.0f)
+                                    )
+                                    // ESTADO
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = if (item.estudiante.voto) Color(0xFFDEF7EC) else Color(0xFFFEF08A),
+                                        modifier = Modifier.weight(1.4f)
+                                    ) {
+                                        Text(
+                                            text = if (item.estudiante.voto) "Ya votó" else "Pendiente",
+                                            color = if (item.estudiante.voto) Color(0xFF03543F) else Color(0xFF713F12),
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                    // ACCIONES
+                                    Text(
+                                        text = "Bloqueado",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF9CA3AF),
+                                        modifier = Modifier.weight(1.3f),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                                if (index < estudiantes.size - 1) {
+                                    HorizontalDivider(color = Color(0xFFF3F4F6))
+                                }
                             }
                         }
                     }
