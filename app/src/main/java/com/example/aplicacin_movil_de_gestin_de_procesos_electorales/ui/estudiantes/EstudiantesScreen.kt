@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.CursoEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
 
@@ -50,7 +51,9 @@ fun EstudiantesScreen(
     onNavigate: (String) -> Unit = {},
 ) {
     val estudiantes by viewModel.estudiantesState.collectAsStateWithLifecycle()
+    val cursosList by viewModel.cursosState.collectAsStateWithLifecycle()
     var mostrarFormulario by remember { mutableStateOf(false) }
+    var estudianteEnEdicion by remember { mutableStateOf<com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.EstudianteEntity?>(null) }
 
     Scaffold(
         topBar = { TopBarElectoral(onBack) },
@@ -62,7 +65,10 @@ fun EstudiantesScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { mostrarFormulario = true },
+                onClick = {
+                    estudianteEnEdicion = null
+                    mostrarFormulario = true
+                },
                 containerColor = AzulElectoral,
                 contentColor = Color.White
             ) {
@@ -79,7 +85,6 @@ fun EstudiantesScreen(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Cabecera del módulo
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -97,7 +102,6 @@ fun EstudiantesScreen(
                 }
             }
 
-            // Tarjeta de Filtros
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -112,7 +116,6 @@ fun EstudiantesScreen(
                         FiltroDropdownSimulado("Jornada", "Todas", Modifier.weight(1f))
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        // 1. Campo de texto con el título por fuera (alineado al diseño)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = "Número de lista", style = MaterialTheme.typography.labelSmall, color = TextoSecundario, modifier = Modifier.padding(bottom = 2.dp), maxLines = 1)
                             OutlinedTextField(
@@ -131,7 +134,6 @@ fun EstudiantesScreen(
                             )
                         }
 
-                        // 2. Dropdown de Estado
                         FiltroDropdownSimulado("Estado", "Todos", Modifier.weight(1f))
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -153,7 +155,6 @@ fun EstudiantesScreen(
                 }
             }
 
-            // Sección: Tabla de Estudiantes
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -162,7 +163,6 @@ fun EstudiantesScreen(
             ) {
                 Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
 
-                    // Cabecera de Tarjeta (Título y Total)
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -175,31 +175,29 @@ fun EstudiantesScreen(
                         Text("Total: ${estudiantes.size} estudiantes", style = MaterialTheme.typography.bodySmall, color = AzulElectoral, fontWeight = FontWeight.Medium)
                     }
 
-                    // AHORA LA TABLA TIENE SCROLL HORIZONTAL
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()) // MAGIA AQUÍ: Scroll lateral para ver todas las columnas
+                            .horizontalScroll(rememberScrollState())
                     ) {
-                        // Cabecera de la tabla con las 7 columnas
+                        // ENCABEZADOS EN EL ORDEN EXACTO DE TU IMAGEN
                         Row(
                             modifier = Modifier
                                 .background(Color(0xFFF9FAFB))
                                 .padding(horizontal = 12.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("ID", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.width(50.dp))
+                            Text("ID", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.width(60.dp))
                             Text("GRADO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.width(90.dp))
                             Text("PARALELO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.width(80.dp))
                             Text("JORNADA", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.width(90.dp))
-                            Text("NÚMERO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.width(70.dp))
+                            Text("NÚMERO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.width(110.dp)) // Aquí va la Cédula
                             Text("ESTADO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.width(90.dp))
                             Text("ACCIONES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.width(90.dp))
                         }
 
-                        // Filas conectadas a la Base de Datos (Room)
                         if (estudiantes.isEmpty()) {
-                            Box(modifier = Modifier.width(660.dp).padding(32.dp), contentAlignment = Alignment.Center) {
+                            Box(modifier = Modifier.width(700.dp).padding(32.dp), contentAlignment = Alignment.Center) {
                                 Text("No hay estudiantes registrados. Usa el botón '+' para agregar el primero.", style = MaterialTheme.typography.bodyMedium, color = TextoSecundario, textAlign = TextAlign.Center)
                             }
                         } else {
@@ -208,12 +206,22 @@ fun EstudiantesScreen(
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(item.estudiante.cedula, fontSize = 12.sp, color = TextoSecundario, modifier = Modifier.width(50.dp))
-                                    Text(item.curso?.grado ?: "Sin grado", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1F2937), modifier = Modifier.width(90.dp))
-                                    Text(item.curso?.paralelo ?: "-", fontSize = 12.sp, color = TextoSecundario, modifier = Modifier.width(80.dp))
-                                    Text(item.curso?.jornada ?: "-", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color(0xFF1F2937), modifier = Modifier.width(90.dp))
-                                    Text("${index + 1}", fontSize = 12.sp, color = TextoSecundario, modifier = Modifier.width(70.dp))
+                                    // 1. ID (Incremental de 1 en adelante usando el índice + 1, o puedes usar item.estudiante.id)
+                                    Text("${index + 1}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextoSecundario, modifier = Modifier.width(60.dp))
 
+                                    // 2. Grado
+                                    Text(item.curso?.grado ?: "Sin grado", fontSize = 12.sp, color = Color(0xFF1F2937), modifier = Modifier.width(90.dp))
+
+                                    // 3. Paralelo
+                                    Text(item.curso?.paralelo ?: "-", fontSize = 12.sp, color = TextoSecundario, modifier = Modifier.width(80.dp))
+
+                                    // 4. Jornada
+                                    Text(item.curso?.jornada ?: "-", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color(0xFF1F2937), modifier = Modifier.width(90.dp))
+
+                                    // 5. NÚMERO (Aquí se pinta la Cédula del estudiante como me pediste)
+                                    Text(item.estudiante.cedula, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1F2937), modifier = Modifier.width(110.dp))
+
+                                    // 6. Estado
                                     Box(modifier = Modifier.width(90.dp)) {
                                         val (colorFondo, colorTexto, texto) = if (item.estudiante.estado) Triple(VerdeFondo, VerdeTexto, "Ya votó") else Triple(Color(0xFFFEF3C7), Color(0xFFB45309), "Pendiente")
                                         Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(colorFondo).padding(horizontal = 8.dp, vertical = 4.dp)) {
@@ -221,7 +229,16 @@ fun EstudiantesScreen(
                                         }
                                     }
 
-                                    Text("Bloqueado", fontSize = 12.sp, color = Color(0xFF94A3B8), modifier = Modifier.width(90.dp))
+                                    // 7. Acciones
+                                    TextButton(
+                                        onClick = {
+                                            estudianteEnEdicion = item.estudiante
+                                            mostrarFormulario = true
+                                        },
+                                        modifier = Modifier.width(90.dp)
+                                    ) {
+                                        Text("Editar", fontSize = 12.sp, color = AzulElectoral, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                                 if (index < estudiantes.size - 1) {
                                     HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
@@ -230,7 +247,6 @@ fun EstudiantesScreen(
                         }
                     }
 
-                    // Paginación
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(top = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -252,8 +268,21 @@ fun EstudiantesScreen(
 
         if (mostrarFormulario) {
             EstudianteFormDialog(
-                onDismiss = { mostrarFormulario = false },
-                onSave = { cedula, nombre, apellido -> mostrarFormulario = false }
+                estudianteExistente = estudianteEnEdicion,
+                cursosDisponibles = cursosList,
+                onDismiss = {
+                    mostrarFormulario = false
+                    estudianteEnEdicion = null
+                },
+                onSave = { cedula, nombre, apellido, cursoId ->
+                    if (estudianteEnEdicion == null) {
+                        viewModel.agregarEstudiante(cedula, nombre, apellido, cursoId)
+                    } else {
+                        viewModel.actualizarEstudiante(cedula, nombre, apellido, cursoId)
+                    }
+                    mostrarFormulario = false
+                    estudianteEnEdicion = null
+                }
             )
         }
     }
@@ -297,24 +326,132 @@ fun FiltroDropdownSimulado(label: String, value: String, modifier: Modifier = Mo
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EstudianteFormDialog(onDismiss: () -> Unit, onSave: (String, String, String) -> Unit) {
-    var cedula by remember { mutableStateOf("") }
-    var nombre by remember { mutableStateOf("") }
-    var apellido by remember { mutableStateOf("") }
+fun EstudianteFormDialog(
+    estudianteExistente: com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.EstudianteEntity? = null,
+    cursosDisponibles: List<CursoEntity>,
+    onDismiss: () -> Unit,
+    onSave: (String, String, String, Int) -> Unit
+) {
+    var cedula by remember { mutableStateOf(estudianteExistente?.cedula ?: "") }
+    var nombre by remember { mutableStateOf(estudianteExistente?.nombre ?: "") }
+    var apellido by remember { mutableStateOf(estudianteExistente?.apellido ?: "") }
+
+    var cursoSeleccionadoId by remember {
+        mutableStateOf(estudianteExistente?.cursoId ?: 0)
+    }
+
+    LaunchedEffect(cursosDisponibles) {
+        if (cursoSeleccionadoId == 0 && cursosDisponibles.isNotEmpty()) {
+            cursoSeleccionadoId = cursosDisponibles.first().id
+        }
+    }
+
+    var expanded by remember { mutableStateOf(false) }
+
+    val cursoActualObj = cursosDisponibles.find { it.id == cursoSeleccionadoId }
+    val textoCursoSeleccionado = if (cursoActualObj != null) {
+        "${cursoActualObj.grado} - ${cursoActualObj.paralelo} (${cursoActualObj.jornada})"
+    } else {
+        "Seleccione un curso"
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Registrar Estudiante", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+        title = {
+            Text(
+                text = if (estudianteExistente == null) "Registrar Estudiante" else "Editar Estudiante",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = cedula, onValueChange = { cedula = it }, label = { Text("Cédula") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
-                OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombres") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
-                OutlinedTextField(value = apellido, onValueChange = { apellido = it }, label = { Text("Apellidos") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(
+                    value = cedula,
+                    onValueChange = { cedula = it },
+                    label = { Text("Cédula") },
+                    singleLine = true,
+                    enabled = estudianteExistente == null,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombres") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                OutlinedTextField(
+                    value = apellido,
+                    onValueChange = { apellido = it },
+                    label = { Text("Apellidos") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = textoCursoSeleccionado,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Curso / Paralelo") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true).fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        if (cursosDisponibles.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("No hay cursos registrados") },
+                                onClick = { expanded = false }
+                            )
+                        } else {
+                            cursosDisponibles.forEach { curso ->
+                                DropdownMenuItem(
+                                    text = { Text("${curso.grado} - ${curso.paralelo} (${curso.jornada})") },
+                                    onClick = {
+                                        cursoSeleccionadoId = curso.id
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
-        confirmButton = { Button(onClick = { onSave(cedula, nombre, apellido) }, colors = ButtonDefaults.buttonColors(containerColor = AzulElectoral), shape = RoundedCornerShape(8.dp)) { Text("Guardar", fontWeight = FontWeight.Bold) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar", color = TextoSecundario, fontWeight = FontWeight.Bold) } },
-        containerColor = Color.White, shape = RoundedCornerShape(16.dp)
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (cedula.isNotBlank() && nombre.isNotBlank() && cursoSeleccionadoId != 0) {
+                        onSave(cedula, nombre, apellido, cursoSeleccionadoId)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = AzulElectoral),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(if (estudianteExistente == null) "Guardar" else "Actualizar", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar", color = TextoSecundario, fontWeight = FontWeight.Bold)
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
     )
 }

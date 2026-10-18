@@ -109,13 +109,7 @@ fun AppNavigation(
 
         composable(Screen.Cursos.route) {
             ProtectedDestination(navController = navController) {
-                val context = LocalContext.current
-                val database = AppDatabase.getInstance(context)
-                val repository = CursoRepositoryImpl(database.cursoDao())
-                val viewModel: CursosViewModel = viewModel(
-                    factory = CursosViewModel.Factory(repository)
-                )
-
+                val viewModel: CursosViewModel = hiltViewModel()
                 CursosScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
