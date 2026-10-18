@@ -1,4 +1,4 @@
-package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.instituciones
+package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configuracion.instituciones
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
