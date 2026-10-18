@@ -13,22 +13,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
-- Modelo de datos auxiliar que une la información del estudiante con su respectivo curso.
- */
 data class EstudianteWithCurso(
     val estudiante: EstudianteEntity,
     val curso: CursoEntity?
 )
 
-/**
-- ViewModel para el módulo de Estudiantes (Migrado a Dagger Hilt).
-- Gestiona el estado reactivo mediante StateFlow y aplica los filtros.
- */
-@HiltViewModel // <- 1. Le dice a Hilt que este es un ViewModel inyectable
-class EstudiantesViewModel @Inject constructor( // <- 2. Le dice a Hilt que inyecte los repositorios aquí
+@HiltViewModel
+class EstudiantesViewModel @Inject constructor(
     private val estudianteRepository: EstudianteRepository,
     private val cursoRepository: CursoRepository
 ) : ViewModel() {
@@ -133,5 +127,60 @@ class EstudiantesViewModel @Inject constructor( // <- 2. Le dice a Hilt que inye
         _selectedParalelo.value = null
         _selectedJornada.value = null
         _selectedEstado.value = null
+    }
+
+    fun agregarEstudiante(cedula: String, nombre: String, apellido: String, cursoId: Int) {
+        viewModelScope.launch {
+            try {
+                val nuevo = EstudianteEntity(
+                    id = 0, // Room autogenera el ID correlativo (1, 2, 3...)
+                    cedula = cedula,
+                    nombre = nombre,
+                    apellido = apellido,
+                    cursoId = cursoId,
+                    numeroLista = 0,
+                    voto = false,
+                    estado = true
+                )
+                estudianteRepository.insertarEstudiante(nuevo)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun actualizarEstudiante(cedula: String, nombre: String, apellido: String, cursoId: Int) {
+        viewModelScope.launch {
+            try {
+                val itemExistente = estudiantesState.value.find { it.estudiante.cedula == cedula }
+                val estudianteActual = itemExistente?.estudiante
+
+                val estudianteActualizado = EstudianteEntity(
+                    id = estudianteActual?.id ?: 0,
+                    cedula = cedula,
+                    nombre = nombre,
+                    apellido = apellido,
+                    cursoId = cursoId,
+                    numeroLista = estudianteActual?.numeroLista ?: 0,
+                    voto = estudianteActual?.voto ?: false,
+                    estado = estudianteActual?.estado ?: true
+                )
+                estudianteRepository.actualizarEstudiante(estudianteActualizado)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun alternarEstadoEstudiante(estudianteActual: EstudianteEntity) {
+        viewModelScope.launch {
+            try {
+                // Creamos una copia del estudiante invirtiendo su estado actual (true -> false o false -> true)
+                val estudianteActualizado = estudianteActual.copy(estado = !estudianteActual.estado)
+                estudianteRepository.actualizarEstudiante(estudianteActualizado)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
