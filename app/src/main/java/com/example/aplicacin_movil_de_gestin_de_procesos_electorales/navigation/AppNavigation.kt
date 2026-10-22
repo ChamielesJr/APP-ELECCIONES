@@ -12,7 +12,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.CursoRepositoryImpl
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.EstudianteRepositoryImpl
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.candidatos.CandidatosScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configuracion.ConfiguracionScreen
@@ -22,13 +21,14 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboar
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.elecciones.EleccionesScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.estudiantes.EstudiantesScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.estudiantes.EstudiantesViewModel
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.instituciones.InstitucionesScreen
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configuracion.instituciones.InstitucionesScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.listas.ListasScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.login.LoginScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.resultados.ResultadosScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.theme.Aplicación_Movil_De_Gestión_De_Procesos_electoralesTheme
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.usuarios.UsuariosScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.votacion.VotacionScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 
 /**
  * GRAFO PRINCIPAL DE NAVEGACIÓN
@@ -108,13 +108,7 @@ fun AppNavigation(
 
         composable(Screen.Cursos.route) {
             ProtectedDestination(navController = navController) {
-                val context = LocalContext.current
-                val database = AppDatabase.getInstance(context)
-                val repository = CursoRepositoryImpl(database.cursoDao())
-                val viewModel: CursosViewModel = viewModel(
-                    factory = CursosViewModel.Factory(repository)
-                )
-
+                val viewModel: CursosViewModel = hiltViewModel()
                 CursosScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
@@ -125,13 +119,7 @@ fun AppNavigation(
 
         composable(Screen.Estudiantes.route) {
             ProtectedDestination(navController = navController) {
-                val context = LocalContext.current
-                val database = AppDatabase.getInstance(context)
-                val estudianteRepository = EstudianteRepositoryImpl(database.estudianteDao())
-                val cursoRepository = CursoRepositoryImpl(database.cursoDao())
-                val viewModel: EstudiantesViewModel = viewModel(
-                    factory = EstudiantesViewModel.Factory(estudianteRepository, cursoRepository)
-                )
+                val viewModel: EstudiantesViewModel = hiltViewModel()
 
                 EstudiantesScreen(
                     viewModel = viewModel,

@@ -1,32 +1,28 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.estudiantes
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.CursoEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.EstudianteEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.CursoRepository
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.EstudianteRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-/**
- * Modelo de datos auxiliar que une la información del estudiante con su respectivo curso.
- */
 data class EstudianteWithCurso(
     val estudiante: EstudianteEntity,
     val curso: CursoEntity?
 )
 
-/**
- * ViewModel para el módulo de Estudiantes.
- * Gestiona el estado reactivo mediante StateFlow y aplica los filtros de búsqueda, grado, paralelo, jornada y estado.
- */
-class EstudiantesViewModel(
+@HiltViewModel
+class EstudiantesViewModel @Inject constructor(
     private val estudianteRepository: EstudianteRepository,
     private val cursoRepository: CursoRepository
 ) : ViewModel() {
@@ -88,9 +84,9 @@ class EstudiantesViewModel(
         }.filter { item ->
             val curso = item.curso
             val matchQuery = query.isBlank() ||
-                item.estudiante.nombre.contains(query, ignoreCase = true) ||
-                item.estudiante.apellido.contains(query, ignoreCase = true) ||
-                item.estudiante.cedula.contains(query, ignoreCase = true)
+                    item.estudiante.nombre.contains(query, ignoreCase = true) ||
+                    item.estudiante.apellido.contains(query, ignoreCase = true) ||
+                    item.estudiante.cedula.contains(query, ignoreCase = true)
 
             val matchGrado = grado.isNullOrBlank() || grado == "Todos" || curso?.grado == grado
             val matchParalelo = paralelo.isNullOrBlank() || paralelo == "Todos" || curso?.paralelo == paralelo
@@ -133,16 +129,58 @@ class EstudiantesViewModel(
         _selectedEstado.value = null
     }
 
-    class Factory(
-        private val estudianteRepository: EstudianteRepository,
-        private val cursoRepository: CursoRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(EstudiantesViewModel::class.java)) {
-                return EstudiantesViewModel(estudianteRepository, cursoRepository) as T
+    fun agregarEstudiante(cedula: String, nombre: String, apellido: String, cursoId: Int) {
+        viewModelScope.launch {
+            try {
+                val nuevo = EstudianteEntity(
+                    id = 0, // Room autogenera el ID correlativo (1, 2, 3...)
+                    cedula = cedula,
+                    nombre = nombre,
+                    apellido = apellido,
+                    cursoId = cursoId,
+                    numeroLista = 0,
+                    voto = false,
+                    estado = true
+                )
+                estudianteRepository.insertarEstudiante(nuevo)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            throw IllegalArgumentException("Unknown ViewModel class")
+        }
+    }
+
+    fun actualizarEstudiante(cedula: String, nombre: String, apellido: String, cursoId: Int) {
+        viewModelScope.launch {
+            try {
+                val itemExistente = estudiantesState.value.find { it.estudiante.cedula == cedula }
+                val estudianteActual = itemExistente?.estudiante
+
+                val estudianteActualizado = EstudianteEntity(
+                    id = estudianteActual?.id ?: 0,
+                    cedula = cedula,
+                    nombre = nombre,
+                    apellido = apellido,
+                    cursoId = cursoId,
+                    numeroLista = estudianteActual?.numeroLista ?: 0,
+                    voto = estudianteActual?.voto ?: false,
+                    estado = estudianteActual?.estado ?: true
+                )
+                estudianteRepository.actualizarEstudiante(estudianteActualizado)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun alternarEstadoEstudiante(estudianteActual: EstudianteEntity) {
+        viewModelScope.launch {
+            try {
+                // Creamos una copia del estudiante invirtiendo su estado actual (true -> false o false -> true)
+                val estudianteActualizado = estudianteActual.copy(estado = !estudianteActual.estado)
+                estudianteRepository.actualizarEstudiante(estudianteActualizado)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }
