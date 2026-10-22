@@ -7,6 +7,18 @@ import androidx.room.PrimaryKey
 
 /**
  * Entidad Room que representa un Proceso Electoral Escolar (RF9).
+ * Pertenece a la capa de datos (Data Layer) y mapea la tabla SQLite 'procesos_electorales'.
+ *
+ * @property id Identificador único autogenerado por Room.
+ * @property institucionId Clave foránea referenciando a la Institución Educativa asociada (InstitucionEntity.id).
+ * @property titulo Título o nombre descriptivo del proceso electoral (ej: "Elecciones Estudiantiles 2026").
+ * @property mensajeInstitucional Lema o mensaje oficial mostrado a la comunidad votante.
+ * @property fechaInicio Fecha programada para el inicio del sufragio (formato AAAA-MM-DD).
+ * @property horaInicio Hora programada para el inicio del sufragio (formato HH:MM).
+ * @property fechaFin Fecha programada para el cierre del sufragio (formato AAAA-MM-DD).
+ * @property horaFin Hora programada para el cierre del sufragio (formato HH:MM).
+ * @property estado Estado operativo del proceso: PROGRAMADO, HABILITADO, SUSPENDIDO, FINALIZADO.
+ * @property fechaCreacion Marca de tiempo UNIX de creación del registro.
  */
 @Entity(
     tableName = "procesos_electorales",
