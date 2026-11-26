@@ -47,21 +47,18 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.InstitucionEntity
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.InstitucionRepository
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
 
@@ -80,55 +77,47 @@ private val RojoEliminar = Color(0xFFE52525)
 fun InstitucionesScreen(
     onBack: () -> Unit = {},
     onNavigate: (String) -> Unit = {},
-    viewModel: InstitucionesViewModel? = null
+    viewModel: InstitucionesViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val database = AppDatabase.getInstance(context)
-
-    val activeViewModel: InstitucionesViewModel = viewModel ?: run {
-        val repository = InstitucionRepository(database.institucionDao(), database.procesoElectoralDao())
-        viewModel(factory = InstitucionesViewModel.Factory(repository))
-    }
-
-    val uiState by activeViewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.mensajeError, uiState.mensajeExito) {
         uiState.mensajeError?.let {
             snackbarHostState.showSnackbar(it)
-            activeViewModel.limpiarMensajes()
+            viewModel.limpiarMensajes()
         }
         uiState.mensajeExito?.let {
             snackbarHostState.showSnackbar(it)
-            activeViewModel.limpiarMensajes()
+            viewModel.limpiarMensajes()
         }
     }
 
     if (uiState.mostrarDialogoFormulario) {
         InstitucionFormDialog(
             institucionEditando = uiState.institucionEnEdicion,
-            onDismiss = { activeViewModel.onCerrarFormulario() },
+            onDismiss = { viewModel.onCerrarFormulario() },
             onGuardar = { nom, cod, dir, tel, cor, dis, est ->
-                activeViewModel.guardarInstitucion(nom, cod, dir, tel, cor, dis, est)
+                viewModel.guardarInstitucion(nom, cod, dir, tel, cor, dis, est)
             }
         )
     }
 
     uiState.institucionADesactivar?.let { inst ->
         AlertDialog(
-            onDismissRequest = { activeViewModel.cancelarDesactivacion() },
+            onDismissRequest = { viewModel.cancelarDesactivacion() },
             title = { Text("Desactivar institución", fontWeight = FontWeight.Bold, color = AzulMarinoPrincipal) },
             text = { Text("¿Está seguro que desea desactivar «${inst.nombre}»? La institución no estará disponible para nuevos procesos electorales.", color = AzulGrisaceoSecundario) },
             confirmButton = {
                 Button(
-                    onClick = { activeViewModel.confirmarDesactivacion() },
+                    onClick = { viewModel.confirmarDesactivacion() },
                     colors = ButtonDefaults.buttonColors(containerColor = RojoEliminar)
                 ) {
                     Text("Desactivar", color = Color.White)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { activeViewModel.cancelarDesactivacion() }) {
+                TextButton(onClick = { viewModel.cancelarDesactivacion() }) {
                     Text("Cancelar", color = AzulGrisaceoSecundario)
                 }
             },
@@ -214,7 +203,7 @@ fun InstitucionesScreen(
                 }
 
                 Button(
-                    onClick = { activeViewModel.onAbrirFormularioNuevo() },
+                    onClick = { viewModel.onAbrirFormularioNuevo() },
                     modifier = Modifier.weight(1f).height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AzulBotonPrincipal, contentColor = Color.White)
@@ -228,14 +217,14 @@ fun InstitucionesScreen(
             // Buscador
             OutlinedTextField(
                 value = uiState.busquedaTexto,
-                onValueChange = { activeViewModel.onBusquedaChange(it) },
+                onValueChange = { viewModel.onBusquedaChange(it) },
                 placeholder = { Text("Buscar institución por nombre o código AMIE...") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 trailingIcon = {
                     if (uiState.busquedaTexto.isNotEmpty()) {
-                        IconButton(onClick = { activeViewModel.onBusquedaChange("") }) {
+                        IconButton(onClick = { viewModel.onBusquedaChange("") }) {
                             Icon(Icons.Default.Clear, contentDescription = "Limpiar")
                         }
                     }
@@ -266,8 +255,8 @@ fun InstitucionesScreen(
                     items(items = institucionesFiltradas, key = { it.id }) { inst ->
                         TarjetaInstitucion(
                             institucion = inst,
-                            onEditar = { activeViewModel.onAbrirFormularioEditar(inst) },
-                            onCambiarEstado = { activeViewModel.solicitarCambioEstado(inst) }
+                            onEditar = { viewModel.onAbrirFormularioEditar(inst) },
+                            onCambiarEstado = { viewModel.solicitarCambioEstado(inst) }
                         )
                     }
                 }

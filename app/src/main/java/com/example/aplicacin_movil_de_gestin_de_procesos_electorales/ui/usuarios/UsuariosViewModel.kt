@@ -1,18 +1,19 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.usuarios
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.InstitucionEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.UsuarioEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.UsuarioRepository
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class UsuariosUiState(
     val usuarios: List<UsuarioEntity> = emptyList(),
@@ -27,7 +28,8 @@ data class UsuariosUiState(
     val usuarioADesactivar: UsuarioEntity? = null
 )
 
-class UsuariosViewModel(
+@HiltViewModel
+class UsuariosViewModel @Inject constructor(
     private val repository: UsuarioRepository
 ) : ViewModel() {
 
@@ -192,15 +194,5 @@ class UsuariosViewModel(
 
     fun limpiarMensajes() {
         _uiState.update { it.copy(mensajeError = null, mensajeExito = null) }
-    }
-
-    class Factory(private val repository: UsuarioRepository) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(UsuariosViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST")
-                return UsuariosViewModel(repository) as T
-            }
-            throw IllegalArgumentException("ViewModel desconocido: ${modelClass.name}")
-        }
     }
 }

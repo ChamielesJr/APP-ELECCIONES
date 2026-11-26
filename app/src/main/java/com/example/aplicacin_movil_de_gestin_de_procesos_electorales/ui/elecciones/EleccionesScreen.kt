@@ -50,7 +50,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,14 +58,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.ProcesoElectoralEntity
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.ProcesoElectoralRepository
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
 
@@ -82,32 +79,19 @@ private val BordeGrisSuave = Color(0xFFE2E8F0)
 fun EleccionesScreen(
     onBack: () -> Unit = {},
     onNavigate: (String) -> Unit = {},
-    viewModel: EleccionesViewModel? = null
+    viewModel: EleccionesViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val database = AppDatabase.getInstance(context)
-
-    val activeViewModel: EleccionesViewModel = viewModel ?: run {
-        val repo = ProcesoElectoralRepository(
-            database.procesoElectoralDao(),
-            database.institucionDao(),
-            database.listaElectoralDao(),
-            database.votacionDao()
-        )
-        viewModel(factory = EleccionesViewModel.Factory(repo))
-    }
-
-    val uiState by activeViewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.mensajeError, uiState.mensajeExito) {
         uiState.mensajeError?.let {
             snackbarHostState.showSnackbar(it)
-            activeViewModel.limpiarMensajes()
+            viewModel.limpiarMensajes()
         }
         uiState.mensajeExito?.let {
             snackbarHostState.showSnackbar(it)
-            activeViewModel.limpiarMensajes()
+            viewModel.limpiarMensajes()
         }
     }
 
@@ -124,19 +108,19 @@ fun EleccionesScreen(
         }
 
         AlertDialog(
-            onDismissRequest = { activeViewModel.cancelarAccion() },
+            onDismissRequest = { viewModel.cancelarAccion() },
             title = { Text(tituloDlg, fontWeight = FontWeight.Bold, color = AzulMarinoPrincipal) },
             text = { Text(msgDlg, color = AzulGrisaceoSecundario) },
             confirmButton = {
                 Button(
-                    onClick = { activeViewModel.confirmarAccion() },
+                    onClick = { viewModel.confirmarAccion() },
                     colors = ButtonDefaults.buttonColors(containerColor = colorBtn)
                 ) {
                     Text("Confirmar", color = Color.White)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { activeViewModel.cancelarAccion() }) {
+                TextButton(onClick = { viewModel.cancelarAccion() }) {
                     Text("Cancelar", color = AzulGrisaceoSecundario)
                 }
             },
@@ -242,14 +226,14 @@ fun EleccionesScreen(
             ) {
                 OutlinedTextField(
                     value = uiState.busquedaTexto,
-                    onValueChange = { activeViewModel.onBusquedaChange(it) },
+                    onValueChange = { viewModel.onBusquedaChange(it) },
                     placeholder = { Text("Buscar por proceso o institución...") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     trailingIcon = {
                         if (uiState.busquedaTexto.isNotEmpty()) {
-                            IconButton(onClick = { activeViewModel.onBusquedaChange("") }) {
+                            IconButton(onClick = { viewModel.onBusquedaChange("") }) {
                                 Icon(Icons.Default.Clear, contentDescription = "Limpiar")
                             }
                         }
@@ -279,7 +263,7 @@ fun EleccionesScreen(
                             DropdownMenuItem(
                                 text = { Text(est) },
                                 onClick = {
-                                    activeViewModel.onFiltroEstadoChange(est)
+                                    viewModel.onFiltroEstadoChange(est)
                                     expFiltro = false
                                 }
                             )
@@ -314,7 +298,7 @@ fun EleccionesScreen(
                         TarjetaProcesoElectoral(
                             proceso = p,
                             institucionNombre = inst?.nombre ?: "Institución desconocida",
-                            onAccion = { acc -> activeViewModel.solicitarAccion(p, acc) }
+                            onAccion = { acc -> viewModel.solicitarAccion(p, acc) }
                         )
                     }
                 }

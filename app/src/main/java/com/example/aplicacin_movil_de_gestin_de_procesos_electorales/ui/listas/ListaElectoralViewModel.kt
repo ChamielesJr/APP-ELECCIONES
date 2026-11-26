@@ -2,13 +2,18 @@ package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.listas
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.CandidatoEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.ListaElectoralEntity
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.CandidatoRepository
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.ListaElectoralRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class ListaElectoralUiState(
     val listas: List<ListaElectoralEntity> = emptyList(),
@@ -17,11 +22,13 @@ data class ListaElectoralUiState(
     val mensajeError: String? = null
 )
 
-class ListaElectoralViewModel(
-    private val repository: ListaElectoralRepository
+@HiltViewModel
+class ListaElectoralViewModel @Inject constructor(
+    private val repository: ListaElectoralRepository,
+    private val candidatoRepository: CandidatoRepository
 ) : ViewModel() {
 
-    val uiState = repository.observarActivas()
+    val uiState: StateFlow<ListaElectoralUiState> = repository.observarActivas()
         .map<List<ListaElectoralEntity>, ListaElectoralUiState> { listas ->
             ListaElectoralUiState(
                 listas = listas,
@@ -43,8 +50,18 @@ class ListaElectoralViewModel(
             initialValue = ListaElectoralUiState()
         )
 
-    val listasDesactivadas = repository.observarDesactivadas()
-        .catch { error ->
+    val listasDesactivadas: StateFlow<List<ListaElectoralEntity>> = repository.observarDesactivadas()
+        .catch {
+            emit(emptyList())
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
+    val candidatos: StateFlow<List<CandidatoEntity>> = candidatoRepository.obtenerTodos()
+        .catch {
             emit(emptyList())
         }
         .stateIn(
@@ -71,7 +88,7 @@ class ListaElectoralViewModel(
                 } else {
                     repository.actualizar(lista)
                 }
-            } catch (error: Exception) {
+            } catch (_: Exception) {
                 // Manejo de errores
             }
         }
@@ -84,7 +101,7 @@ class ListaElectoralViewModel(
                     id = lista.id,
                     estado = !lista.estado
                 )
-            } catch (error: Exception) {
+            } catch (_: Exception) {
                 // Manejo de errores
             }
         }
@@ -94,7 +111,7 @@ class ListaElectoralViewModel(
         viewModelScope.launch {
             try {
                 repository.eliminar(lista)
-            } catch (error: Exception) {
+            } catch (_: Exception) {
                 // Manejo de errores
             }
         }

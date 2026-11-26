@@ -1,5 +1,6 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.listas
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +41,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,22 +50,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.CandidatoEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.ListaElectoralEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.UsuarioEntity
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.ListaElectoralRepository
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
@@ -88,30 +84,16 @@ fun ListasScreen(
     onLogoutClick: () -> Unit = {},
     onBack: () -> Unit = {},
     onNavigate: (String) -> Unit = {},
+    viewModel: ListaElectoralViewModel = hiltViewModel()
 ) {
-    val sessionUser by SessionManager.currentUser.collectAsState()
+    val sessionUser by SessionManager.currentUser.collectAsStateWithLifecycle()
     val currentUser = currentUserParam ?: sessionUser
 
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
-    val database = AppDatabase.getInstance(context)
-
-    val factory = remember(context) {
-        ListaElectoralViewModelFactory(
-            ListaElectoralRepository(
-                database.listaElectoralDao(),
-                database.candidatoDao(),
-                database
-            )
-        )
-    }
-    val viewModel: ListaElectoralViewModel = viewModel(factory = factory)
-    val uiState by viewModel.uiState.collectAsState()
-    val listasDesactivadas by viewModel.listasDesactivadas.collectAsState()
-    val candidatos by database.candidatoDao()
-        .obtenerTodos()
-        .collectAsState(initial = emptyList())
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val listasDesactivadas by viewModel.listasDesactivadas.collectAsStateWithLifecycle()
+    val candidatos by viewModel.candidatos.collectAsStateWithLifecycle()
 
     var textoBusqueda by rememberSaveable { mutableStateOf("") }
     var mostrarFormulario by rememberSaveable { mutableStateOf(false) }
@@ -316,7 +298,7 @@ fun ListasScreen(
                         containerColor = Color.White,
                         contentColor = AzulMarino
                     ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AzulPrimario)
+                    border = BorderStroke(1.dp, AzulPrimario)
                 ) {
                     Text("← Regresar al dashboard", fontWeight = FontWeight.Bold)
                 }
@@ -414,7 +396,6 @@ fun ListasScreen(
                             TarjetaListaElectoral(
                                 lista = lista,
                                 candidatos = candidatosLista,
-                                //activa = true,
                                 onEditar = {
                                     listaEnEdicion = lista
                                     mostrarFormulario = true
@@ -443,7 +424,6 @@ fun ListasScreen(
                                 TarjetaListaElectoral(
                                     lista = lista,
                                     candidatos = candidatosLista,
-                                    //activa = false,
                                     onEditar = {
                                         listaEnEdicion = lista
                                         mostrarFormulario = true
@@ -485,7 +465,6 @@ fun ListasScreen(
 private fun TarjetaListaElectoral(
     lista: ListaElectoralEntity,
     candidatos: List<CandidatoEntity>,
-    //activa: Boolean,
     onEditar: () -> Unit,
     onEliminar: () -> Unit
 ) {
@@ -498,19 +477,14 @@ private fun TarjetaListaElectoral(
     }
 
     val presidente = candidatos.find {
-        it.cargo.equals("Presidente", ignoreCase = true) }
-        ?: candidatos.firstOrNull()
+        it.cargo.equals("Presidente", ignoreCase = true)
+    } ?: candidatos.firstOrNull()
     val vicepresidente = candidatos.find {
-        it.cargo.contains("Vice", ignoreCase = true) }
-        ?: candidatos.getOrNull(1)
+        it.cargo.contains("Vice", ignoreCase = true)
+    } ?: candidatos.getOrNull(1)
 
-    /*val presNombre = presidente?.let { "${it.nombres} ${it.apellidos}".trim() }
-        ?: if (lista.nombre.trim().equals("Voto Nulo", ignoreCase = true)) "Voto Nulo" else "No registrado"
-    val viceNombre = vicepresidente?.let { "${it.nombres} ${it.apellidos}".trim() }
-        ?: if (lista.nombre.trim().equals("Voto Nulo", ignoreCase = true)) "No registrado" else "No registrado"*/
     val presNombre = presidente?.let { "${it.nombres} ${it.apellidos}".trim() } ?: "No registrado"
     val viceNombre = vicepresidente?.let { "${it.nombres} ${it.apellidos}".trim() } ?: "No registrado"
-
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -538,12 +512,7 @@ private fun TarjetaListaElectoral(
                         AsyncImage(
                             model = remember(lista.logo) {
                                 val archivo = File(lista.logo)
-
-                                if (archivo.isFile) {
-                                    archivo
-                                } else {
-                                    lista.logo
-                                }
+                                if (archivo.isFile) archivo else lista.logo
                             },
                             contentDescription = "Logo ${lista.nombre}",
                             modifier = Modifier.fillMaxSize(),
@@ -653,15 +622,12 @@ private fun TarjetaListaElectoral(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
-                            //.background(if (activa) VerdeEstadoFondo else Color(0xFFE5E7EB))
-                            .background(if (lista.estado) { VerdeEstadoFondo } else { Color(0xFFE5E7EB) })
+                            .background(if (lista.estado) VerdeEstadoFondo else Color(0xFFE5E7EB))
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            //text = if (activa) "Activa" else "Desactivada",
-                            //color = if (activa) VerdeEstadoTexto else Color(0xFF374151),
                             text = if (lista.estado) "Activa" else "Inactiva",
-                            color = if (lista.estado) { VerdeEstadoTexto } else { Color(0xFF374151) },
+                            color = if (lista.estado) VerdeEstadoTexto else Color(0xFF374151),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -722,17 +688,5 @@ private fun TarjetaListaElectoral(
                 }
             }
         }
-    }
-}
-
-private class ListaElectoralViewModelFactory(
-    private val repository: ListaElectoralRepository
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ListaElectoralViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return ListaElectoralViewModel(repository) as T
-        }
-        throw IllegalArgumentException("ViewModel desconocido: ${modelClass.name}")
     }
 }

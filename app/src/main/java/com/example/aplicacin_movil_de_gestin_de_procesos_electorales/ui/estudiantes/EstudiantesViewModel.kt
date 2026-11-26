@@ -133,7 +133,7 @@ class EstudiantesViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val nuevo = EstudianteEntity(
-                    id = 0, // Room autogenera el ID correlativo (1, 2, 3...)
+                    id = 0,
                     cedula = cedula,
                     nombre = nombre,
                     apellido = apellido,
@@ -175,7 +175,6 @@ class EstudiantesViewModel @Inject constructor(
     fun alternarEstadoEstudiante(estudianteActual: EstudianteEntity) {
         viewModelScope.launch {
             try {
-                // Creamos una copia del estudiante invirtiendo su estado actual (true -> false o false -> true)
                 val estudianteActualizado = estudianteActual.copy(estado = !estudianteActual.estado)
                 estudianteRepository.actualizarEstudiante(estudianteActualizado)
             } catch (e: Exception) {

@@ -18,12 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.CursoEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
@@ -39,24 +40,71 @@ val TextGray = Color(0xFF6B7280)
 val BorderGray = Color(0xFFE5E7EB)
 val BackgroundGray = Color(0xFFF4F7F9)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CursosScreen(
-    viewModel: CursosViewModel,
+    viewModel: CursosViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
     onNavigate: (String) -> Unit = {}
 ) {
     val cursos by viewModel.cursosState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
-    // Estados para controlar el formulario modal
     var showFormDialog by remember { mutableStateOf(false) }
     var cursoAEditar by remember { mutableStateOf<CursoEntity?>(null) }
 
+    CursosContent(
+        cursos = cursos,
+        searchQuery = searchQuery,
+        onBack = onBack,
+        onNavigate = onNavigate,
+        onSearchQueryChange = viewModel::updateSearchQuery,
+        onRegistrarClick = {
+            cursoAEditar = null
+            showFormDialog = true
+        },
+        onEditarClick = { curso ->
+            cursoAEditar = curso
+            showFormDialog = true
+        },
+        onEliminarClick = viewModel::eliminarCurso
+    )
+
+    if (showFormDialog) {
+        CursoFormDialog(
+            curso = cursoAEditar,
+            onDismiss = { showFormDialog = false },
+            onSave = { grado, paralelo, jornada, nivel ->
+                if (cursoAEditar == null) {
+                    viewModel.agregarCurso(grado, paralelo, jornada, nivel)
+                } else {
+                    val editado = cursoAEditar!!.copy(
+                        grado = grado,
+                        paralelo = paralelo,
+                        jornada = jornada,
+                        nivel = nivel
+                    )
+                    viewModel.actualizarCurso(editado)
+                }
+                showFormDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun CursosContent(
+    cursos: List<CursoEntity>,
+    searchQuery: String,
+    onBack: () -> Unit,
+    onNavigate: (String) -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onRegistrarClick: () -> Unit,
+    onEditarClick: (CursoEntity) -> Unit,
+    onEliminarClick: (CursoEntity) -> Unit
+) {
     Scaffold(
         containerColor = BackgroundGray,
         topBar = {
-            // Cabecera con protección de barra de estado para que no se aplaste arriba
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -69,7 +117,6 @@ fun CursosScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = DarkBlue)
                 }
 
-                // 2. Textos principales alineados
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -78,21 +125,20 @@ fun CursosScreen(
                 ) {
                     Text(
                         text = "Sistema de Elecciones Escolares",
-                        fontSize = 10.5.sp, // Tamaño exacto para que entre completo
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = DarkBlue,
                         maxLines = 1,
-                        softWrap = false // Forza a que no se rompa la línea
+                        softWrap = false
                     )
                     Text(
                         text = "Distrito 13D02",
                         fontSize = 9.sp,
                         color = TextGray,
-                        modifier = Modifier.offset(y = (-2).dp) // Sube el distrito para que quede pegadito
+                        modifier = Modifier.offset(y = (-2).dp)
                     )
                 }
 
-                // 3. Perfil de Administrador
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(end = 8.dp)
@@ -124,7 +170,6 @@ fun CursosScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            // 1. Cabecera (Icono, Títulos y Botón)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -165,10 +210,7 @@ fun CursosScreen(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Button(
-                    onClick = {
-                        cursoAEditar = null // Indicamos que es un registro nuevo
-                        showFormDialog = true // Mostramos el diálogo
-                    },
+                    onClick = onRegistrarClick,
                     modifier = Modifier.height(38.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                     shape = RoundedCornerShape(8.dp),
@@ -182,17 +224,16 @@ fun CursosScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 2. Buscador (Altura liberada para centrar el texto)
             OutlinedTextField(
                 value = searchQuery,
-                onValueChange = { viewModel.updateSearchQuery(it) },
+                onValueChange = onSearchQueryChange,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Buscar curso, paralelo o jornada...", color = TextGray, fontSize = 13.sp) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar", tint = TextGray, modifier = Modifier.size(22.dp)) },
-                textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp), // <-- TEXTO NEGRO Y NEGRITA
+                textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.Black, // <-- COLOR AL ESCRIBIR
-                    unfocusedTextColor = Color.Black, // <-- COLOR AL SALIR
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
                     unfocusedContainerColor = Color.White,
                     focusedContainerColor = Color.White,
                     unfocusedBorderColor = BorderGray,
@@ -204,7 +245,6 @@ fun CursosScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 3. Tabla de Datos
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -215,7 +255,6 @@ fun CursosScreen(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                    // Encabezados
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -233,16 +272,12 @@ fun CursosScreen(
 
                     HorizontalDivider(color = BorderGray, thickness = 1.dp)
 
-                    // Lista de cursos
                     LazyColumn(modifier = Modifier.fillMaxWidth()) {
                         items(cursos) { curso ->
                             CursoRow(
                                 curso = curso,
-                                onEdit = {
-                                    cursoAEditar = curso // Pasamos el curso a editar
-                                    showFormDialog = true // Abrimos el modal
-                                },
-                                onDelete = { viewModel.eliminarCurso(curso) }
+                                onEdit = { onEditarClick(curso) },
+                                onDelete = { onEliminarClick(curso) }
                             )
                             HorizontalDivider(color = BorderGray, thickness = 0.5.dp)
                         }
@@ -262,7 +297,6 @@ fun CursosScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. Paginación
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -292,30 +326,6 @@ fun CursosScreen(
                 }
             }
         }
-    }
-
-    // Modal del Formulario (Aparece cuando showFormDialog es true)
-    if (showFormDialog) {
-        CursoFormDialog(
-            curso = cursoAEditar,
-            onDismiss = { showFormDialog = false },
-            onSave = { grado, paralelo, jornada, nivel ->
-                if (cursoAEditar == null) {
-                    // MODO CREAR
-                    viewModel.agregarCurso(grado, paralelo, jornada, nivel)
-                } else {
-                    // MODO EDITAR
-                    val editado = cursoAEditar!!.copy(
-                        grado = grado,
-                        paralelo = paralelo,
-                        jornada = jornada,
-                        nivel = nivel
-                    )
-                    viewModel.actualizarCurso(editado)
-                }
-                showFormDialog = false // Cerramos el diálogo después de guardar
-            }
-        )
     }
 }
 
@@ -448,7 +458,7 @@ fun CursoFormDialog(
                     onValueChange = { grado = it },
                     label = { Text("Curso / Grado", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
                     singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black,
@@ -465,7 +475,7 @@ fun CursoFormDialog(
                     onValueChange = { paralelo = it },
                     label = { Text("Paralelo", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
                     singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black,
@@ -482,7 +492,7 @@ fun CursoFormDialog(
                     onValueChange = { jornada = it },
                     label = { Text("Jornada", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
                     singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black,
@@ -499,7 +509,7 @@ fun CursoFormDialog(
                     onValueChange = { nivel = it },
                     label = { Text("Nivel", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
                     singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                    textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black,

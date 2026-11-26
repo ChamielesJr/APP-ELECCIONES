@@ -50,7 +50,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,14 +58,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.ListaElectoralEntity
 
 private val AzulMarinoPrincipal = Color(0xFF101B55)
@@ -80,32 +78,15 @@ private val BordeGrisSuave = Color(0xFFE2E8F0)
 @Composable
 fun VotacionScreen(
     onVolverAlLogin: () -> Unit = {},
-    viewModel: VotacionViewModel? = null
+    viewModel: VotacionViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val database = AppDatabase.getInstance(context)
-
-    val activeViewModel: VotacionViewModel = viewModel ?: run {
-        viewModel(
-            factory = VotacionViewModel.Factory(
-                database.institucionDao(),
-                database.procesoElectoralDao(),
-                database.cursoDao(),
-                database.estudianteDao(),
-                database.listaElectoralDao(),
-                database.candidatoDao(),
-                database.votacionDao()
-            )
-        )
-    }
-
-    val uiState by activeViewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.mensajeError) {
         uiState.mensajeError?.let {
             snackbarHostState.showSnackbar(it)
-            activeViewModel.limpiarMensaje()
+            viewModel.limpiarMensaje()
         }
     }
 
@@ -113,7 +94,7 @@ fun VotacionScreen(
     if (uiState.mostrarConfirmacionDialog) {
         val opcionNombre = if (uiState.esVotoNulo) "VOTO NULO" else uiState.opcionSeleccionada?.nombre ?: "Sin Selección"
         AlertDialog(
-            onDismissRequest = { activeViewModel.cancelarConfirmacion() },
+            onDismissRequest = { viewModel.cancelarConfirmacion() },
             title = { Text("CONFIRMAR VOTO", fontWeight = FontWeight.Bold, color = AzulMarinoPrincipal) },
             text = {
                 Text(
@@ -123,14 +104,14 @@ fun VotacionScreen(
             },
             confirmButton = {
                 Button(
-                    onClick = { activeViewModel.confirmarVotoDefinitivo() },
+                    onClick = { viewModel.confirmarVotoDefinitivo() },
                     colors = ButtonDefaults.buttonColors(containerColor = AzulBotonPrincipal)
                 ) {
                     Text("CONFIRMAR VOTO", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { activeViewModel.cancelarConfirmacion() }) {
+                TextButton(onClick = { viewModel.cancelarConfirmacion() }) {
                     Text("CANCELAR", color = AzulGrisaceoSecundario)
                 }
             },
@@ -162,25 +143,25 @@ fun VotacionScreen(
             when (uiState.pasoActual) {
                 1 -> Paso1SeleccionarInstitucion(
                     uiState = uiState,
-                    onSeleccionarPared = { pair -> activeViewModel.seleccionarInstitucion(pair) },
+                    onSeleccionarPared = { pair -> viewModel.seleccionarInstitucion(pair) },
                     onVolverLogin = onVolverAlLogin
                 )
                 2 -> Paso2IdentificacionEstudiante(
                     uiState = uiState,
-                    onCursoSelected = { c -> activeViewModel.seleccionarCurso(c) },
-                    onNumeroChange = { num -> activeViewModel.onNumeroListaChange(num) },
-                    onContinuar = { activeViewModel.validarEstudianteYContinuar() },
-                    onAtras = { activeViewModel.regresarPasoAnterior() }
+                    onCursoSelected = { c -> viewModel.seleccionarCurso(c) },
+                    onNumeroChange = { num -> viewModel.onNumeroListaChange(num) },
+                    onContinuar = { viewModel.validarEstudianteYContinuar() },
+                    onAtras = { viewModel.regresarPasoAnterior() }
                 )
                 3 -> Paso3OpcionesElectorales(
                     uiState = uiState,
-                    onOpcionSelect = { lista, nulo -> activeViewModel.seleccionarOpcionVoto(lista, nulo) },
-                    onConfirmarClick = { activeViewModel.solicitarConfirmacion() },
-                    onAtras = { activeViewModel.regresarPasoAnterior() }
+                    onOpcionSelect = { lista, nulo -> viewModel.seleccionarOpcionVoto(lista, nulo) },
+                    onConfirmarClick = { viewModel.solicitarConfirmacion() },
+                    onAtras = { viewModel.regresarPasoAnterior() }
                 )
                 4 -> Paso4VotoExitoso(
                     onFinalizar = {
-                        activeViewModel.reiniciarFlujo()
+                        viewModel.reiniciarFlujo()
                         onVolverAlLogin()
                     }
                 )

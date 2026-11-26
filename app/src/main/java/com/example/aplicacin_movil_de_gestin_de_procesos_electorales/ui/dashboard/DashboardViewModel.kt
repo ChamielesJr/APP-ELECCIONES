@@ -1,17 +1,22 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.UsuarioEntity
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.CursoRepository
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.EstudianteRepository
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.InstitucionRepository
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.ListaElectoralRepository
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.ProcesoElectoralRepository
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class DashboardUiState(
     val totalCursos: Int = 0,
@@ -26,15 +31,14 @@ data class DashboardUiState(
     val showLogoutDialog: Boolean = false,
 )
 
-class DashboardViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val db = AppDatabase.getInstance(application)
-    private val cursoDao = db.cursoDao()
-    private val estudianteDao = db.estudianteDao()
-    private val listaElectoralDao = db.listaElectoralDao()
-    private val usuarioDao = db.usuarioDao()
-    private val institucionDao = db.institucionDao()
-    private val procesoElectoralDao = db.procesoElectoralDao()
+@HiltViewModel
+class DashboardViewModel @Inject constructor(
+    private val cursoRepository: CursoRepository,
+    private val estudianteRepository: EstudianteRepository,
+    private val listaElectoralRepository: ListaElectoralRepository,
+    private val institucionRepository: InstitucionRepository,
+    private val procesoElectoralRepository: ProcesoElectoralRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -44,7 +48,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         observeCursos()
         observeEstudiantes()
         observeListasElectorales()
-        observeUsuarios()
         observeInstituciones()
         observeProcesos()
     }
@@ -59,7 +62,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun observeCursos() {
         viewModelScope.launch {
-            cursoDao.obtenerTodosLosCursos()
+            cursoRepository.obtenerTodosLosCursos()
                 .catch { emit(emptyList()) }
                 .collect { cursos ->
                     _uiState.update { it.copy(totalCursos = cursos.size) }
@@ -69,7 +72,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun observeEstudiantes() {
         viewModelScope.launch {
-            estudianteDao.obtenerTodosLosEstudiantes()
+            estudianteRepository.obtenerTodosLosEstudiantes()
                 .catch { emit(emptyList()) }
                 .collect { estudiantes ->
                     val habilitados = estudiantes.count { it.estado }
@@ -86,7 +89,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun observeListasElectorales() {
         viewModelScope.launch {
-            listaElectoralDao.obtenerTodasFlow()
+            listaElectoralRepository.observarActivas()
                 .catch { emit(emptyList()) }
                 .collect { listas ->
                     _uiState.update { it.copy(totalListasElectorales = listas.size) }
@@ -94,19 +97,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun observeUsuarios() {
-        viewModelScope.launch {
-            usuarioDao.obtenerTodosLosUsuarios()
-                .catch { emit(emptyList()) }
-                .collect { usuarios ->
-                    _uiState.update { it.copy(totalUsuarios = usuarios.size) }
-                }
-        }
-    }
-
     private fun observeInstituciones() {
         viewModelScope.launch {
-            institucionDao.obtenerTodasInstituciones()
+            institucionRepository.obtenerTodas()
                 .catch { emit(emptyList()) }
                 .collect { insts ->
                     _uiState.update { it.copy(totalInstituciones = insts.size) }
@@ -116,7 +109,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun observeProcesos() {
         viewModelScope.launch {
-            procesoElectoralDao.obtenerTodos()
+            procesoElectoralRepository.obtenerTodosProcesos()
                 .catch { emit(emptyList()) }
                 .collect { procesos ->
                     _uiState.update { it.copy(totalProcesos = procesos.size) }

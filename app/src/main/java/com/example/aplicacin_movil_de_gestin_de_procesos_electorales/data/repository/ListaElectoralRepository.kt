@@ -2,60 +2,74 @@ package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repos
 
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.dao.CandidatoDao
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.dao.ListaElectoralDao
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.CandidatoEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.ListaElectoralEntity
-import kotlinx.coroutines.flow.Flow
 import androidx.room.withTransaction
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
+import kotlinx.coroutines.flow.Flow
 
+interface ListaElectoralRepository {
+    fun observarTodas(): Flow<List<ListaElectoralEntity>>
+    fun observarActivas(): Flow<List<ListaElectoralEntity>>
+    fun observarDesactivadas(): Flow<List<ListaElectoralEntity>>
+    suspend fun insertar(lista: ListaElectoralEntity): Long
+    suspend fun actualizar(lista: ListaElectoralEntity)
+    suspend fun eliminar(lista: ListaElectoralEntity)
+    suspend fun cambiarEstado(id: Int, estado: Boolean)
+    suspend fun obtenerPorId(id: Int): ListaElectoralEntity?
+    suspend fun guardarListaConCandidatos(
+        lista: ListaElectoralEntity,
+        presidenteNombreCompleto: String,
+        vicepresidenteNombreCompleto: String
+    ): Long
+}
 
-class ListaElectoralRepository(
+class ListaElectoralRepositoryImpl(
     private val listaElectoralDao: ListaElectoralDao,
     private val candidatoDao: CandidatoDao,
-    private val database: AppDatabase,
-) {
-    fun observarTodas(): Flow<List<ListaElectoralEntity>> {
+    private val database: AppDatabase
+) : ListaElectoralRepository {
+
+    override fun observarTodas(): Flow<List<ListaElectoralEntity>> {
         return listaElectoralDao.observarTodas()
     }
 
-    fun observarActivas(): Flow<List<ListaElectoralEntity>> {
+    override fun observarActivas(): Flow<List<ListaElectoralEntity>> {
         return listaElectoralDao.observarActivasEnTiempoReal()
     }
 
-    fun observarDesactivadas(): Flow<List<ListaElectoralEntity>> {
+    override fun observarDesactivadas(): Flow<List<ListaElectoralEntity>> {
         return listaElectoralDao.observarDesactivadas()
     }
 
-    suspend fun insertar(lista: ListaElectoralEntity): Long {
+    override suspend fun insertar(lista: ListaElectoralEntity): Long {
         return listaElectoralDao.insertar(lista)
     }
 
-    suspend fun actualizar(lista: ListaElectoralEntity) {
+    override suspend fun actualizar(lista: ListaElectoralEntity) {
         listaElectoralDao.actualizar(lista)
     }
 
-    suspend fun eliminar(lista: ListaElectoralEntity) {
+    override suspend fun eliminar(lista: ListaElectoralEntity) {
         database.withTransaction {
             candidatoDao.eliminarPorLista(lista.id)
             listaElectoralDao.eliminar(lista)
         }
     }
 
-    suspend fun cambiarEstado(id: Int, estado: Boolean) {
+    override suspend fun cambiarEstado(id: Int, estado: Boolean) {
         listaElectoralDao.cambiarEstado(id, estado)
     }
 
-    suspend fun obtenerPorId(id: Int): ListaElectoralEntity? {
+    override suspend fun obtenerPorId(id: Int): ListaElectoralEntity? {
         return listaElectoralDao.obtenerPorId(id)
     }
 
-    suspend fun guardarListaConCandidatos(
+    override suspend fun guardarListaConCandidatos(
         lista: ListaElectoralEntity,
         presidenteNombreCompleto: String,
         vicepresidenteNombreCompleto: String
     ): Long {
-
-        // 1. Guardar o actualizar la lista electoral
         val listaId = if (lista.id == 0) {
             listaElectoralDao.insertar(lista).toInt()
         } else {
@@ -63,20 +77,15 @@ class ListaElectoralRepository(
             lista.id
         }
 
-        // 2. Consultar los candidatos que pertenecen a esta lista
         val candidatosExistentes = candidatoDao.obtenerPorLista(listaId)
 
-        // 3. Buscar al presidente por su cargo
         val presidenteExistente = candidatosExistentes.firstOrNull {
             it.cargo.equals("Presidente", ignoreCase = true)
         }
 
         if (presidenteNombreCompleto.isNotBlank()) {
-            val (nombres, apellidos) =
-                separarNombreCompleto(presidenteNombreCompleto)
-
+            val (nombres, apellidos) = separarNombreCompleto(presidenteNombreCompleto)
             if (presidenteExistente != null) {
-                // Actualizar al presidente existente
                 candidatoDao.actualizar(
                     presidenteExistente.copy(
                         nombres = nombres,
@@ -85,7 +94,6 @@ class ListaElectoralRepository(
                     )
                 )
             } else {
-                // Registrar un presidente nuevo
                 candidatoDao.insertar(
                     CandidatoEntity(
                         nombres = nombres,
@@ -97,17 +105,13 @@ class ListaElectoralRepository(
             }
         }
 
-        // 4. Buscar al vicepresidente por su cargo
         val vicepresidenteExistente = candidatosExistentes.firstOrNull {
             it.cargo.equals("Vicepresidente", ignoreCase = true)
         }
 
         if (vicepresidenteNombreCompleto.isNotBlank()) {
-            val (nombres, apellidos) =
-                separarNombreCompleto(vicepresidenteNombreCompleto)
-
+            val (nombres, apellidos) = separarNombreCompleto(vicepresidenteNombreCompleto)
             if (vicepresidenteExistente != null) {
-                // Actualizar al vicepresidente existente
                 candidatoDao.actualizar(
                     vicepresidenteExistente.copy(
                         nombres = nombres,
@@ -116,7 +120,6 @@ class ListaElectoralRepository(
                     )
                 )
             } else {
-                // Registrar un vicepresidente nuevo
                 candidatoDao.insertar(
                     CandidatoEntity(
                         nombres = nombres,
@@ -128,7 +131,6 @@ class ListaElectoralRepository(
             }
         }
 
-        // 5. Devolver el identificador de la lista
         return listaId.toLong()
     }
 

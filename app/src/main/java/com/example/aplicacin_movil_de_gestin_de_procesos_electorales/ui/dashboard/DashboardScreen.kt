@@ -16,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -24,7 +23,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.AdministrationSection
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
@@ -44,9 +44,9 @@ fun DashboardScreen(
     onConfiguracionClick: () -> Unit = {},
     onResultadosClick: () -> Unit = {},
     onLogoutSuccess: () -> Unit = {},
-    viewModel: DashboardViewModel = viewModel(),
+    viewModel: DashboardViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.snackbarMessage) {
@@ -56,11 +56,44 @@ fun DashboardScreen(
         }
     }
 
+    DashboardContent(
+        uiState = uiState,
+        snackbarHostState = snackbarHostState,
+        onInstitucionesClick = onInstitucionesClick,
+        onUsuariosClick = onUsuariosClick,
+        onCursosClick = onCursosClick,
+        onEstudiantesClick = onEstudiantesClick,
+        onEleccionesClick = onEleccionesClick,
+        onListasClick = onListasClick,
+        onConfiguracionClick = onConfiguracionClick,
+        onResultadosClick = onResultadosClick,
+        onLogoutRequested = viewModel::onLogoutRequested,
+        onDismissLogoutDialog = viewModel::onDismissLogoutDialog,
+        onConfirmLogout = { viewModel.confirmLogout(onLogoutSuccess) }
+    )
+}
+
+@Composable
+private fun DashboardContent(
+    uiState: DashboardUiState,
+    snackbarHostState: SnackbarHostState,
+    onInstitucionesClick: () -> Unit,
+    onUsuariosClick: () -> Unit,
+    onCursosClick: () -> Unit,
+    onEstudiantesClick: () -> Unit,
+    onEleccionesClick: () -> Unit,
+    onListasClick: () -> Unit,
+    onConfiguracionClick: () -> Unit,
+    onResultadosClick: () -> Unit,
+    onLogoutRequested: () -> Unit,
+    onDismissLogoutDialog: () -> Unit,
+    onConfirmLogout: () -> Unit
+) {
     Scaffold(
         topBar = {
             DashboardTopBar(
                 currentUser = uiState.currentUser,
-                onLogoutClick = { viewModel.onLogoutRequested() }
+                onLogoutClick = onLogoutRequested
             )
         },
         bottomBar = {
@@ -89,10 +122,8 @@ fun DashboardScreen(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // 1. Tarjeta de Bienvenida
             WelcomeCard()
 
-            // 2. Tarjetas Estadísticas informativas
             DashboardStatistics(
                 totalCursos = uiState.totalCursos,
                 totalEstudiantes = uiState.totalEstudiantesHabilitados,
@@ -100,7 +131,6 @@ fun DashboardScreen(
                 totalVotos = uiState.votosRegistrados
             )
 
-            // 3. Sección "Administración del sistema" (8 tarjetas interactivas)
             AdministrationSection(
                 onCursosClick = onCursosClick,
                 onEstudiantesClick = onEstudiantesClick,
@@ -119,10 +149,9 @@ fun DashboardScreen(
         }
     }
 
-    // Diálogo de Confirmación para Cerrar Sesión
     if (uiState.showLogoutDialog) {
         AlertDialog(
-            onDismissRequest = { viewModel.onDismissLogoutDialog() },
+            onDismissRequest = onDismissLogoutDialog,
             title = {
                 Text(
                     text = "Cerrar sesión",
@@ -139,9 +168,7 @@ fun DashboardScreen(
                 )
             },
             confirmButton = {
-                TextButton(
-                    onClick = { viewModel.confirmLogout(onLogoutSuccess) }
-                ) {
+                TextButton(onClick = onConfirmLogout) {
                     Text(
                         text = "Cerrar sesión",
                         color = Color(0xFFDC2626),
@@ -150,9 +177,7 @@ fun DashboardScreen(
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { viewModel.onDismissLogoutDialog() }
-                ) {
+                TextButton(onClick = onDismissLogoutDialog) {
                     Text(
                         text = "Cancelar",
                         color = Color(0xFF64748B)

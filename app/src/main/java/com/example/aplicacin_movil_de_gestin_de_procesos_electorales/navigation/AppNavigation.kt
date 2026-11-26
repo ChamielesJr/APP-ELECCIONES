@@ -4,14 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.CursoRepositoryImpl
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.candidatos.CandidatosScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.configuracion.ConfiguracionScreen
@@ -29,6 +25,7 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.theme.Ap
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.usuarios.UsuariosScreen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.votacion.VotacionScreen
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * GRAFO PRINCIPAL DE NAVEGACIÓN
@@ -206,7 +203,7 @@ private fun ProtectedDestination(
     navController: NavHostController,
     content: @Composable () -> Unit
 ) {
-    val isAuthenticated by SessionManager.isAuthenticated.collectAsState()
+    val isAuthenticated by SessionManager.isAuthenticated.collectAsStateWithLifecycle()
     if (!isAuthenticated) {
         LaunchedEffect(Unit) {
             navController.navigate(Screen.Login.route) {

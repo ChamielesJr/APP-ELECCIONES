@@ -7,23 +7,51 @@ import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.PasswordHasher
 import kotlinx.coroutines.flow.Flow
 
-class UsuarioRepository(
+interface UsuarioRepository {
+    fun obtenerTodosUsuarios(): Flow<List<UsuarioEntity>>
+    fun obtenerTodasInstituciones(): Flow<List<InstitucionEntity>>
+    suspend fun obtenerUsuarioPorId(id: Int): UsuarioEntity?
+    suspend fun obtenerUsuarioPorCorreo(correo: String): UsuarioEntity?
+    suspend fun registrarUsuario(
+        nombre: String,
+        apellido: String,
+        correo: String,
+        contrasenaPlana: String,
+        rol: String,
+        institucionId: Int?,
+        estado: Boolean
+    ): Result<Unit>
+    suspend fun actualizarUsuario(
+        usuarioExistente: UsuarioEntity,
+        nombre: String,
+        apellido: String,
+        correo: String,
+        nuevaContrasenaPlana: String?,
+        rol: String,
+        institucionId: Int?,
+        estado: Boolean
+    ): Result<Unit>
+    suspend fun cambiarEstado(id: Int, nuevoEstado: Boolean)
+}
+
+class UsuarioRepositoryImpl(
     private val usuarioDao: UsuarioDao,
     private val institucionDao: InstitucionDao
-) {
-    fun obtenerTodosUsuarios(): Flow<List<UsuarioEntity>> =
+) : UsuarioRepository {
+
+    override fun obtenerTodosUsuarios(): Flow<List<UsuarioEntity>> =
         usuarioDao.obtenerTodosLosUsuarios()
 
-    fun obtenerTodasInstituciones(): Flow<List<InstitucionEntity>> =
+    override fun obtenerTodasInstituciones(): Flow<List<InstitucionEntity>> =
         institucionDao.obtenerTodasInstituciones()
 
-    suspend fun obtenerUsuarioPorId(id: Int): UsuarioEntity? =
+    override suspend fun obtenerUsuarioPorId(id: Int): UsuarioEntity? =
         usuarioDao.obtenerUsuarioPorId(id)
 
-    suspend fun obtenerUsuarioPorCorreo(correo: String): UsuarioEntity? =
+    override suspend fun obtenerUsuarioPorCorreo(correo: String): UsuarioEntity? =
         usuarioDao.obtenerUsuarioPorCorreo(correo)
 
-    suspend fun registrarUsuario(
+    override suspend fun registrarUsuario(
         nombre: String,
         apellido: String,
         correo: String,
@@ -52,7 +80,7 @@ class UsuarioRepository(
         return Result.success(Unit)
     }
 
-    suspend fun actualizarUsuario(
+    override suspend fun actualizarUsuario(
         usuarioExistente: UsuarioEntity,
         nombre: String,
         apellido: String,
@@ -89,7 +117,7 @@ class UsuarioRepository(
         return Result.success(Unit)
     }
 
-    suspend fun cambiarEstado(id: Int, nuevoEstado: Boolean) {
+    override suspend fun cambiarEstado(id: Int, nuevoEstado: Boolean) {
         usuarioDao.cambiarEstado(id, nuevoEstado)
     }
 }

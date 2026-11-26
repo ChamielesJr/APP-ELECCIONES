@@ -1,17 +1,18 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.elecciones
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.InstitucionEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.ProcesoElectoralEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.ProcesoElectoralRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class EleccionesUiState(
     val procesos: List<ProcesoElectoralEntity> = emptyList(),
@@ -25,7 +26,8 @@ data class EleccionesUiState(
     val tipoAccion: String? = null // "HABILITAR", "SUSPENDER", "REANUDAR", "FINALIZAR"
 )
 
-class EleccionesViewModel(
+@HiltViewModel
+class EleccionesViewModel @Inject constructor(
     private val repository: ProcesoElectoralRepository
 ) : ViewModel() {
 
@@ -113,15 +115,5 @@ class EleccionesViewModel(
 
     fun limpiarMensajes() {
         _uiState.update { it.copy(mensajeError = null, mensajeExito = null) }
-    }
-
-    class Factory(private val repository: ProcesoElectoralRepository) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(EleccionesViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST")
-                return EleccionesViewModel(repository) as T
-            }
-            throw IllegalArgumentException("ViewModel desconocido: ${modelClass.name}")
-        }
     }
 }

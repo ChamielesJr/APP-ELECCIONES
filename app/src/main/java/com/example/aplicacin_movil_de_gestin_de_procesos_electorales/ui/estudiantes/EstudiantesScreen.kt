@@ -1,5 +1,6 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.estudiantes
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -48,7 +48,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.EstudianteEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
 
@@ -58,21 +60,35 @@ private val TextoSecundario = Color(0xFF6B7280)
 private val ContenedorIcono = Color(0xFFE0E7FF)
 private val ColorIcono = Color(0xFF3730A3)
 
-/**
- * Pantalla principal de Estudiantes diseñada con el estilo visual de alta fidelidad (Maquetado).
- * Permite desplazamiento vertical completo (ideal para modo horizontal / landscape).
- * Respeta el uso exclusivo de StateFlow sin variables mutables de Compose prohibidas.
- */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EstudiantesScreen(
-    viewModel: EstudiantesViewModel,
+    viewModel: EstudiantesViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
     onNavigate: (String) -> Unit = {},
 ) {
     val estudiantes by viewModel.estudiantesState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
+    EstudiantesContent(
+        estudiantes = estudiantes,
+        searchQuery = searchQuery,
+        onBack = onBack,
+        onNavigate = onNavigate,
+        onSearchQueryChange = viewModel::updateSearchQuery,
+        onLimpiarFiltros = viewModel::limpiarFiltros
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EstudiantesContent(
+    estudiantes: List<EstudianteWithCurso>,
+    searchQuery: String,
+    onBack: () -> Unit,
+    onNavigate: (String) -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onLimpiarFiltros: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -120,7 +136,6 @@ fun EstudiantesScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Cabecera del módulo (Título y descripción con icono)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -155,7 +170,6 @@ fun EstudiantesScreen(
                 }
             }
 
-            // Tarjeta de Filtros y Búsqueda
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -168,16 +182,17 @@ fun EstudiantesScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Barra de búsqueda principal
                     OutlinedTextField(
                         value = searchQuery,
-                        onValueChange = { viewModel.updateSearchQuery(it) },
+                        onValueChange = onSearchQueryChange,
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Buscar estudiantes", color = TextoSecundario) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar", tint = TextoSecundario) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = "Buscar", tint = TextoSecundario)
+                        },
                         trailingIcon = {
                             if (searchQuery.isNotBlank()) {
-                                IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                                IconButton(onClick = { onSearchQueryChange("") }) {
                                     Icon(Icons.Default.Clear, contentDescription = "Limpiar")
                                 }
                             }
@@ -186,7 +201,6 @@ fun EstudiantesScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    // Filtros Fila 1: Grado, Paralelo, Jornada
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -208,7 +222,6 @@ fun EstudiantesScreen(
                         )
                     }
 
-                    // Filtros Fila 2: Número de lista y Estado
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -232,7 +245,6 @@ fun EstudiantesScreen(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Botones Buscar y Limpiar filtros
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -252,7 +264,7 @@ fun EstudiantesScreen(
                         }
 
                         OutlinedButton(
-                            onClick = { viewModel.limpiarFiltros() },
+                            onClick = onLimpiarFiltros,
                             modifier = Modifier
                                 .weight(1f)
                                 .height(48.dp),
@@ -261,13 +273,18 @@ fun EstudiantesScreen(
                         ) {
                             Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Limpiar filtros", fontWeight = FontWeight.Bold, color = Color(0xFF4B5563), maxLines = 1, fontSize = 11.sp)
+                            Text(
+                                "Limpiar filtros",
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF4B5563),
+                                maxLines = 1,
+                                fontSize = 11.sp
+                            )
                         }
                     }
                 }
             }
 
-            // Sección: Estudiantes registrados
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -310,7 +327,6 @@ fun EstudiantesScreen(
                         )
                     }
 
-                    // Cabecera de la tabla de datos
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -361,7 +377,7 @@ fun FiltroDropdownSimulado(label: String, value: String, modifier: Modifier = Mo
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         color = Color(0xFFF9FAFB),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E7EB))
+        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
     ) {
         Column(
             modifier = Modifier

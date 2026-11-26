@@ -1,10 +1,12 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.candidatos
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.CandidatoEntity
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.repository.CandidatoRepository
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.ListaElectoralEntity
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.CandidatoRepository
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.ListaElectoralRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class CandidatoUiState(
     val candidatos: List<CandidatoEntity> = emptyList(),
@@ -21,12 +24,14 @@ data class CandidatoUiState(
     val mensajeError: String? = null
 )
 
-class CandidatoViewModel(
-    private val repository: CandidatoRepository
+@HiltViewModel
+class CandidatoViewModel @Inject constructor(
+    private val repository: CandidatoRepository,
+    private val listaElectoralRepository: ListaElectoralRepository
 ) : ViewModel() {
 
     // Estado del listado de candidatos
-    val uiState = repository.obtenerTodos()
+    val uiState: StateFlow<CandidatoUiState> = repository.obtenerTodos()
         .map<List<CandidatoEntity>, CandidatoUiState> { candidatos ->
             CandidatoUiState(
                 candidatos = candidatos,
@@ -46,6 +51,14 @@ class CandidatoViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = CandidatoUiState()
+        )
+
+    val listas: StateFlow<List<ListaElectoralEntity>> = listaElectoralRepository.observarActivas()
+        .catch { emit(emptyList()) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
         )
 
     // Estado del formulario
@@ -80,7 +93,6 @@ class CandidatoViewModel(
     }
 
     fun cambiarFoto(ruta: String) {
-        //_formState.update { it.copy(foto = valor, error = null) }
         _formState.update { estado -> estado.copy(foto = ruta) }
     }
 
@@ -195,22 +207,5 @@ class CandidatoViewModel(
         _formState.update {
             it.copy(menuCargoAbierto = false)
         }
-    }
-
-}
-
-class CandidatoViewModelFactory(
-    private val repository: CandidatoRepository
-) : ViewModelProvider.Factory {
-
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(CandidatoViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return CandidatoViewModel(repository) as T
-        }
-
-        throw IllegalArgumentException(
-            "ViewModel desconocido: ${modelClass.name}"
-        )
     }
 }

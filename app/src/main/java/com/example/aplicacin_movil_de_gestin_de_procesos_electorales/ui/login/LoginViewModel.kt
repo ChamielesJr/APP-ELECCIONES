@@ -1,16 +1,16 @@
 package com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.login
 
-import android.app.Application
 import android.database.sqlite.SQLiteException
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.init.AdminInitResult
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.init.AdminInitializer
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
+import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.dao.UsuarioDao
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.UsuarioEntity
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.AuthRepository
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.AuthResult
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.security.SessionManager
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
 data class LoginUiState(
     val email: String = "",
@@ -33,10 +34,11 @@ data class LoginUiState(
     val snackbarMessage: String? = null,
 )
 
-class LoginViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val db = AppDatabase.getInstance(application)
-    private val authRepository = AuthRepository(db.usuarioDao())
+@HiltViewModel
+class LoginViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
+    private val usuarioDao: UsuarioDao
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -46,7 +48,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 val initResult = withContext(Dispatchers.IO) {
-                    AdminInitializer.initialize(db.usuarioDao())
+                    AdminInitializer.initialize(usuarioDao)
                 }
                 if (initResult is AdminInitResult.PendingCredentials) {
                     _uiState.update { it.copy(snackbarMessage = initResult.message) }

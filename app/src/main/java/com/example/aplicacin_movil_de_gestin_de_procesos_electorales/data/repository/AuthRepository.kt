@@ -10,13 +10,20 @@ sealed class AuthResult {
 }
 
 /**
- * Repositorio de autenticación para la verificación de credenciales de usuario.
+ * Interfaz de repositorio de autenticación.
  */
-class AuthRepository(
-    private val usuarioDao: UsuarioDao
-) {
+interface AuthRepository {
+    suspend fun authenticate(correo: String, contrasena: String): AuthResult
+}
 
-    suspend fun authenticate(correo: String, contrasena: String): AuthResult {
+/**
+ * Implementación de [AuthRepository] respaldada por Room ([UsuarioDao]).
+ */
+class AuthRepositoryImpl(
+    private val usuarioDao: UsuarioDao
+) : AuthRepository {
+
+    override suspend fun authenticate(correo: String, contrasena: String): AuthResult {
         val trimmedCorreo = correo.trim()
         if (trimmedCorreo.isEmpty() || contrasena.isEmpty()) {
             return AuthResult.Error("Debe ingresar correo y contraseña.")

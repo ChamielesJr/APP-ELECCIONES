@@ -32,10 +32,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,23 +48,18 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.database.AppDatabase
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.local.entity.UsuarioEntity
-import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.data.repository.UsuarioRepository
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.navigation.Screen
 import com.example.aplicacin_movil_de_gestin_de_procesos_electorales.ui.dashboard.components.DashboardBottomNavigation
 
@@ -85,27 +78,19 @@ private val RojoEliminar = Color(0xFFE52525)
 fun UsuariosScreen(
     onBack: () -> Unit = {},
     onNavigate: (String) -> Unit = {},
-    viewModel: UsuariosViewModel? = null
+    viewModel: UsuariosViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val database = AppDatabase.getInstance(context)
-
-    val activeViewModel: UsuariosViewModel = viewModel ?: run {
-        val repository = UsuarioRepository(database.usuarioDao(), database.institucionDao())
-        viewModel(factory = UsuariosViewModel.Factory(repository))
-    }
-
-    val uiState by activeViewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.mensajeError, uiState.mensajeExito) {
         uiState.mensajeError?.let {
             snackbarHostState.showSnackbar(it)
-            activeViewModel.limpiarMensajes()
+            viewModel.limpiarMensajes()
         }
         uiState.mensajeExito?.let {
             snackbarHostState.showSnackbar(it)
-            activeViewModel.limpiarMensajes()
+            viewModel.limpiarMensajes()
         }
     }
 
@@ -113,9 +98,9 @@ fun UsuariosScreen(
         UsuarioFormDialog(
             usuarioEditando = uiState.usuarioEnEdicion,
             instituciones = uiState.instituciones,
-            onDismiss = { activeViewModel.onCerrarFormulario() },
+            onDismiss = { viewModel.onCerrarFormulario() },
             onGuardar = { nom, ape, cor, pas, conf, rol, instId, est ->
-                activeViewModel.guardarUsuario(nom, ape, cor, pas, conf, rol, instId, est)
+                viewModel.guardarUsuario(nom, ape, cor, pas, conf, rol, instId, est)
             }
         )
     }
@@ -123,19 +108,19 @@ fun UsuariosScreen(
     // Diálogo de confirmación para desactivación
     uiState.usuarioADesactivar?.let { user ->
         AlertDialog(
-            onDismissRequest = { activeViewModel.cancelarDesactivacion() },
+            onDismissRequest = { viewModel.cancelarDesactivacion() },
             title = { Text("Desactivar cuenta", fontWeight = FontWeight.Bold, color = AzulMarinoPrincipal) },
             text = { Text("¿Está seguro que desea desactivar la cuenta de ${user.nombre} ${user.apellido}? El usuario no podrá ingresar al sistema.", color = AzulGrisaceoSecundario) },
             confirmButton = {
                 Button(
-                    onClick = { activeViewModel.confirmarDesactivacion() },
+                    onClick = { viewModel.confirmarDesactivacion() },
                     colors = ButtonDefaults.buttonColors(containerColor = RojoEliminar)
                 ) {
                     Text("Desactivar", color = Color.White)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { activeViewModel.cancelarDesactivacion() }) {
+                TextButton(onClick = { viewModel.cancelarDesactivacion() }) {
                     Text("Cancelar", color = AzulGrisaceoSecundario)
                 }
             },
@@ -148,7 +133,9 @@ fun UsuariosScreen(
         val coincideBusqueda = u.nombre.lowercase().contains(consulta) ||
                 u.apellido.lowercase().contains(consulta) ||
                 u.correo.lowercase().contains(consulta)
-        val coincideRol = if (uiState.rolFiltro == "Todos") true else u.rol == uiState.rolFiltro
+
+        val coincideRol = if (uiState.rolFiltro == "Todos") true else u.rol.equals(uiState.rolFiltro, ignoreCase = true)
+
         coincideBusqueda && coincideRol
     }
 
@@ -190,7 +177,7 @@ fun UsuariosScreen(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFE0F2FE)),
+                        .background(Color(0xFFEFF6FF)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -202,7 +189,7 @@ fun UsuariosScreen(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Gestión de Usuarios", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AzulMarinoPrincipal)
-                    Text("Administrar usuarios autorizados del sistema.", style = MaterialTheme.typography.bodyMedium, color = AzulGrisaceoSecundario)
+                    Text("Administrar cuentas de acceso al sistema.", style = MaterialTheme.typography.bodyMedium, color = AzulGrisaceoSecundario)
                 }
             }
 
@@ -223,69 +210,50 @@ fun UsuariosScreen(
                 }
 
                 Button(
-                    onClick = { activeViewModel.onAbrirFormularioNuevo() },
+                    onClick = { viewModel.onAbrirFormularioNuevo() },
                     modifier = Modifier.weight(1f).height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AzulBotonPrincipal, contentColor = Color.White)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("+ Agregar Usuario", fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("+ Nuevo Usuario", fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
 
-            // Buscador y Filtro
+            // Buscador
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 OutlinedTextField(
                     value = uiState.busquedaTexto,
-                    onValueChange = { activeViewModel.onBusquedaChange(it) },
+                    onValueChange = { viewModel.onBusquedaChange(it) },
                     placeholder = { Text("Buscar nombre o correo...") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     trailingIcon = {
                         if (uiState.busquedaTexto.isNotEmpty()) {
-                            IconButton(onClick = { activeViewModel.onBusquedaChange("") }) {
+                            IconButton(onClick = { viewModel.onBusquedaChange("") }) {
                                 Icon(Icons.Default.Clear, contentDescription = "Limpiar")
                             }
                         }
                     }
                 )
+            }
 
-                // Filtro de Rol
-                var expFiltro by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = expFiltro,
-                    onExpandedChange = { expFiltro = !expFiltro },
-                    modifier = Modifier.width(130.dp)
-                ) {
-                    OutlinedTextField(
-                        value = uiState.rolFiltro,
-                        onValueChange = {},
-                        readOnly = true,
-                        singleLine = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expFiltro) },
-                        modifier = Modifier.menuAnchor(),
-                        shape = RoundedCornerShape(12.dp)
+            // Chips de Filtro por Rol
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf("Todos", "Administrador", "Rector", "Docente").forEach { r ->
+                    FilterChip(
+                        selected = uiState.rolFiltro == r,
+                        onClick = { viewModel.onRolFiltroChange(r) },
+                        label = { Text(r) }
                     )
-                    ExposedDropdownMenu(
-                        expanded = expFiltro,
-                        onDismissRequest = { expFiltro = false }
-                    ) {
-                        listOf("Todos", "Administrador", "Rector", "Docente").forEach { r ->
-                            DropdownMenuItem(
-                                text = { Text(r) },
-                                onClick = {
-                                    activeViewModel.onRolFiltroChange(r)
-                                    expFiltro = false
-                                }
-                            )
-                        }
-                    }
                 }
             }
 
@@ -299,7 +267,7 @@ fun UsuariosScreen(
                     border = BorderStroke(1.dp, BordeGrisSuave)
                 ) {
                     Text(
-                        text = if (uiState.usuarios.isEmpty()) "No hay usuarios registrados aún." else "No se encontraron usuarios para esa búsqueda.",
+                        text = if (uiState.usuarios.isEmpty()) "No hay usuarios registrados." else "No se encontraron usuarios con esos criterios.",
                         modifier = Modifier.padding(20.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AzulGrisaceoSecundario
@@ -311,12 +279,12 @@ fun UsuariosScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(items = usuariosFiltrados, key = { it.id }) { u ->
-                        val inst = uiState.instituciones.find { it.id == u.institucionId }
+                        val inst = uiState.instituciones.find { i -> i.id == u.institucionId }
                         TarjetaUsuario(
                             usuario = u,
                             institucionNombre = inst?.nombre ?: "Sin institución asignada",
-                            onEditar = { activeViewModel.onAbrirFormularioEditar(u) },
-                            onCambiarEstado = { activeViewModel.solicitarCambioEstado(u) }
+                            onEditar = { viewModel.onAbrirFormularioEditar(u) },
+                            onCambiarEstado = { viewModel.solicitarCambioEstado(u) }
                         )
                     }
                 }
@@ -334,10 +302,9 @@ private fun TarjetaUsuario(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = FondoTarjeta),
-        border = BorderStroke(1.dp, BordeGrisSuave),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        border = BorderStroke(1.dp, BordeGrisSuave)
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
@@ -349,21 +316,30 @@ private fun TarjetaUsuario(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("${usuario.nombre} ${usuario.apellido}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AzulMarinoPrincipal)
-                    Text(usuario.correo, style = MaterialTheme.typography.bodySmall, color = AzulGrisaceoSecundario)
+                    Text(
+                        text = "${usuario.nombre} ${usuario.apellido}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AzulMarinoPrincipal
+                    )
+                    Text(
+                        text = usuario.correo,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AzulGrisaceoSecundario
+                    )
                 }
 
                 Box(
                     modifier = Modifier
-                        .clip(CircleShape)
-                        .background(if (usuario.estado) VerdeEstadoFondo else Color(0xFFF1F5F9))
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (usuario.estado) VerdeEstadoFondo else Color(0xFFFEE2E2))
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = if (usuario.estado) "Activo" else "Inactivo",
-                        color = if (usuario.estado) VerdeEstadoTexto else Color(0xFF64748B),
+                        text = if (usuario.estado) "ACTIVO" else "INACTIVO",
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = if (usuario.estado) VerdeEstadoTexto else RojoEliminar
                     )
                 }
             }
@@ -373,42 +349,24 @@ private fun TarjetaUsuario(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Rol: ${usuario.rol}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = AzulBotonPrincipal)
-                Text(institucionNombre, style = MaterialTheme.typography.bodySmall, color = AzulGrisaceoSecundario, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Button(
-                    onClick = onEditar,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AzulBotonPrincipal, contentColor = Color.White),
-                    modifier = Modifier.height(36.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp)
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(15.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Editar", style = MaterialTheme.typography.labelMedium)
+                Column {
+                    Text("Rol: ${usuario.rol}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AzulMarinoPrincipal)
+                    if (usuario.institucionId != null) {
+                        Text("Plantel: $institucionNombre", style = MaterialTheme.typography.bodySmall, color = AzulGrisaceoSecundario)
+                    }
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Button(
-                    onClick = onCambiarEstado,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (usuario.estado) RojoEliminar else AzulBotonPrincipal,
-                        contentColor = Color.White
-                    ),
-                    modifier = Modifier.height(36.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp)
-                ) {
-                    Icon(if (usuario.estado) Icons.Default.Block else Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(15.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(if (usuario.estado) "Desactivar" else "Reactivar", style = MaterialTheme.typography.labelMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    IconButton(onClick = onEditar) {
+                        Icon(Icons.Default.Edit, contentDescription = "Editar usuario", tint = AzulBotonPrincipal)
+                    }
+                    IconButton(onClick = onCambiarEstado) {
+                        Icon(
+                            imageVector = if (usuario.estado) Icons.Default.Block else Icons.Default.CheckCircle,
+                            contentDescription = if (usuario.estado) "Desactivar" else "Reactivar",
+                            tint = if (usuario.estado) RojoEliminar else VerdeEstadoTexto
+                        )
+                    }
                 }
             }
         }
